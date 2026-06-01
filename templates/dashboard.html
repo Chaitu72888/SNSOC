@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNSOC - Real-Time Operations Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5.0">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"></div>
+            SNSOC<span class="highlight">.live</span>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="switchTab('overview', this)">
+                <span class="nav-icon">📊</span> Overview
+            </div>
+            <div class="nav-item" onclick="switchTab('ids-rules', this)">
+                <span class="nav-icon">🛡</span> IDS Rules
+            </div>
+            <div class="nav-item" onclick="switchTab('threat-intel', this)">
+                <span class="nav-icon">🌐</span> Threat Intel
+            </div>
+            <div class="nav-item" onclick="switchTab('settings', this)">
+                <span class="nav-icon">⚙</span> Settings
+            </div>
+        </div>
+        <div style="flex-grow: 1;"></div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-item logout-btn">
+            <span class="nav-icon" style="background: var(--crit); border-radius: 4px; padding: 2px;"></span> Logout
+        </a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <header class="topbar">
+            <h2>Real-Time Operations Dashboard</h2>
+            <div class="system-status-pill">
+                <div class="dot green"></div> System Active
+            </div>
+        </header>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active-tab">
+            <div class="dashboard-grid">
+                
+                <!-- Total Packets -->
+                <div class="panel">
+                    <div class="panel-subtitle">TOTAL PACKETS EVALUATED</div>
+                    <div class="panel-value" id="total_packets_count">0</div>
+                    <div class="panel-footer success">System operating nominally</div>
+                </div>
+
+                <!-- Threat Level -->
+                <div class="panel">
+                    <div class="panel-subtitle">THREAT LEVEL</div>
+                    <div class="panel-value critical-text" id="dynamic_level">CRITICAL</div>
+                    <div class="panel-footer">Based on ML & Heuristics</div>
+                </div>
+
+                <!-- Protocol Distribution -->
+                <div class="panel chart-panel">
+                    <div class="panel-subtitle">PROTOCOL DISTRIBUTION</div>
+                    <div class="chart-container">
+                        <canvas id="doughnutChart"></canvas>
+                        <div class="custom-legend" id="doughnutLegend"></div>
+                    </div>
+                </div>
+
+                <!-- Live Traffic Over Time -->
+                <div class="panel chart-panel">
+                    <div class="panel-subtitle">LIVE TRAFFIC OVER TIME</div>
+                    <div class="chart-container line-chart">
+                        <canvas id="areaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts Row -->
+            <div class="panel alerts-panel">
+                <div class="alerts-header">
+                    <div class="panel-subtitle">CRITICAL AND RECENT ALERTS</div>
+                    <div class="alerts-count" id="crit_alerts_count">0</div>
+                </div>
+                <div class="alerts-list" id="incidents_body">
+                    <!-- Populated by JS -->
+                </div>
+                <button class="styled-btn full-width" style="margin-top: 16px; background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color);" onclick="loadMoreAlerts()">Load More</button>
+            </div>
+            
+            <!-- Source IPs -->
+            <div class="panel ip-panel" style="margin-bottom: 24px;">
+                 <div class="panel-subtitle" style="margin-bottom:16px;">TOP ACTIVE SOURCE IPS</div>
+                 <div class="ip-list" id="top_ips_body">
+                     <!-- Populated by JS -->
+                 </div>
+            </div>
+
+            <!-- Live Packet Stream -->
+            <div class="panel packet-panel">
+                <div class="panel-subtitle">LIVE PACKET STREAM</div>
+                <div style="overflow-x: auto;">
+                    <table class="packet-table" id="packet_table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Proto</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="packet_body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- IDS Rules Tab -->
+        <div id="ids-rules-tab" class="tab-content">
+            <div class="panel">
+                <div class="panel-subtitle">PROTECTED PORT RULES</div>
+                <p class="panel-desc">Ports monitored for suspicious connection attempts.</p>
+                <div class="input-group">
+                    <input type="text" id="new_port" placeholder="e.g. 8080" class="styled-input">
+                    <button class="styled-btn" onclick="addPort()">Add Port</button>
+                </div>
+                <div class="rules-list" id="ports_list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top: 24px;">
+                <div class="panel-subtitle">VOLUME THRESHOLD RULES</div>
+                <p class="panel-desc">Alert if IP sends more than X packets in Y seconds.</p>
+                <div class="input-group multi-input">
+                    <label>Max Packets: <input type="number" id="vol_limit" value="100" class="styled-input inline"></label>
+                    <label>Time Window (s): <input type="number" id="vol_window" value="10" class="styled-input inline"></label>
+                    <button class="styled-btn" onclick="updateVolume()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threat Intel Tab -->
+        <div id="threat-intel-tab" class="tab-content">
+            <div class="panel">
+                <div class="panel-subtitle">THREAT INTELLIGENCE API CONFIGURATION</div>
+                <p class="panel-desc">Provide an AbuseIPDB Key to switch from Custom Mock intel to Real Threat Feeds.</p>
+                <div class="input-group-full">
+                    <label>API Key</label>
+                    <input type="password" id="ti_api_key" placeholder="Enter API Key" class="styled-input">
+                </div>
+                <div class="checkbox-group" title="In mock mode, no real API calls are made. Toggle off and add AbuseIPDB key to enable live threat feeds.">
+                    <input type="checkbox" id="ti_mock_mode" checked>
+                    <label for="ti_mock_mode">Force Mock Mode (No external API calls)</label>
+                </div>
+                <button class="styled-btn full-width" onclick="updateTIConfig()">Update Integration</button>
+            </div>
+
+            <div class="panel" style="margin-top: 24px;">
+                <div class="panel-subtitle">PERFORM EXPLICIT IP LOOKUP</div>
+                <p class="panel-desc">Manually query an IP address against the configured intelligence source.</p>
+                <div class="input-group">
+                    <input type="text" id="lookup_ip" placeholder="e.g. 185.15.1.100" class="styled-input">
+                    <button class="styled-btn" onclick="lookupIP()">Check Reputation</button>
+                </div>
+                <div id="lookup_result" class="lookup-result"></div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="panel">
+                <div class="panel-subtitle">SYSTEM SETTINGS</div>
+                <p class="panel-desc">General system configuration options.</p>
+                <!-- Placeholder for future settings -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Block Modal -->
+    <div id="block-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Confirm Block</h3>
+            <p id="block-modal-text">Block IP?</p>
+            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+                <button class="styled-btn" style="background-color: var(--bg-dark); border: 1px solid var(--border-color);" onclick="closeBlockModal()">Cancel</button>
+                <button class="styled-btn btn-danger" onclick="confirmBlock()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IP Detail Popover -->
+    <div id="ip-detail-modal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin-top:0; margin-bottom:0;" id="ip-detail-title">IP Details</h3>
+                <span style="cursor:pointer; font-size:1.2rem;" onclick="closeIpModal()">&times;</span>
+            </div>
+            <div id="ip-detail-body" style="margin-top:16px;">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId + '-tab').classList.add('active-tab');
+            el.classList.add('active');
+        }
+    </script>
+    <script src="{{ url_for('static', filename='charts.js') }}?v=5.0"></script>
+</body>
+</html>
