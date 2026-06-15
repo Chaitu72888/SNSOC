@@ -1,0 +1,12 @@
+flask>=3.0
+flask-socketio>=5.3
+flask-limiter>=3.5
+python-dotenv>=1.0
+werkzeug>=3.0
+bcrypt>=4.1
+scikit-learn>=1.4
+numpy>=1.26
+pandas>=2.2
+scapy>=2.5
+requests>=2.31
+geoip2>=4.8

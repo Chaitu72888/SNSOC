@@ -20,7 +20,7 @@ def capture_loop(app, socketio):
     global total_packets_captured
     # Simple Mock Packet Generator
     while True:
-        time.sleep(random.uniform(1.0, 2.0))
+        socketio.sleep(random.uniform(1.0, 2.0))
         
         is_malicious = random.random() < 0.05
         src_ip = random.choice(MOCK_MALICIOUS_IPS) if is_malicious else f"192.168.1.{random.randint(1, 50)}"
@@ -61,5 +61,4 @@ def capture_loop(app, socketio):
             socketio.emit('new_alert', a)
 
 def start_capture_thread(app, socketio):
-    t = threading.Thread(target=capture_loop, args=(app, socketio), daemon=True)
-    t.start()
+    socketio.start_background_task(capture_loop, app, socketio)

@@ -28,7 +28,7 @@ def compute_threat_level(app):
 def stats_loop(app, socketio):
     from engine.capture import get_packet_stats
     while True:
-        time.sleep(5)
+        socketio.sleep(5)
         threat = compute_threat_level(app)
         stats = get_packet_stats()
         
@@ -40,5 +40,4 @@ def stats_loop(app, socketio):
         })
 
 def start_stats_thread(app, socketio):
-    t = threading.Thread(target=stats_loop, args=(app, socketio), daemon=True)
-    t.start()
+    socketio.start_background_task(stats_loop, app, socketio)

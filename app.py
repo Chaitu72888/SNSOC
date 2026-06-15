@@ -56,8 +56,8 @@ def create_app():
 
 def seed_db():
     if not Operator.query.first():
-        hashed = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        admin = Operator(name='admin', passcode_hash=hashed)
+        hashed = bcrypt.hashpw('siva2580'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        admin = Operator(name='sivachaitanya72@gmail.com', passcode_hash=hashed)
         db.session.add(admin)
     
     if not IDSRule.query.filter_by(rule_type='protected_port').first():
