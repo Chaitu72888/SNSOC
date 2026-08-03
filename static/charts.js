@@ -85,6 +85,7 @@ async function updateDashboardStats() {
         if (levelEl && stats.threat_level) {
             levelEl.textContent = stats.threat_level.level;
             levelEl.className = 'panel-value';
+            levelEl.style.color = '';
             if (stats.threat_level.level === 'CRITICAL') levelEl.classList.add('critical-text');
             else if (stats.threat_level.level === 'HIGH') levelEl.style.color = 'var(--high)';
             else if (stats.threat_level.level === 'MEDIUM') levelEl.style.color = 'var(--med)';
@@ -377,6 +378,7 @@ socket.on('threat_update', (threat) => {
     if (levelEl) {
         levelEl.textContent = threat.level;
         levelEl.className = 'panel-value';
+        levelEl.style.color = '';
         if (threat.level === 'CRITICAL') levelEl.classList.add('critical-text');
         else if (threat.level === 'HIGH') levelEl.style.color = 'var(--high)';
         else if (threat.level === 'MEDIUM') levelEl.style.color = 'var(--med)';
@@ -395,14 +397,108 @@ socket.on('stats_update', (stats) => {
     }
 });
 
+async function updateTelemetryUI() {
+    try {
+        const res = await fetch('/api/telemetry/consumption');
+        if (!res.ok) return;
+        const json = await res.json();
+        const data = json.data;
+
+        // Update Threat Intel Data Consumption Pill & Bar
+        const monthlyPill = document.getElementById('ti_monthly_usage_pill');
+        if (monthlyPill) monthlyPill.textContent = `${data.monthly_usage_kb} KB used this month`;
+
+        const ratioText = document.getElementById('ti_ratio_text');
+        if (ratioText) ratioText.textContent = `Android: ${data.android_pct}% | Web: ${data.web_pct}%`;
+
+        const androidBar = document.getElementById('ti_android_bar');
+        if (androidBar) {
+            androidBar.style.width = `${data.android_pct}%`;
+            androidBar.title = `Android App: ${data.android_weekly_mb} MB`;
+        }
+
+        const webBar = document.getElementById('ti_web_bar');
+        if (webBar) {
+            webBar.style.width = `${data.web_pct}%`;
+            webBar.title = `Web Dashboard: ${data.web_weekly_mb} MB`;
+        }
+
+        const androidLegend = document.getElementById('ti_android_legend');
+        if (androidLegend) androidLegend.innerHTML = `<span style="width: 10px; height: 10px; border-radius: 50%; background: var(--accent-blue); display: inline-block;"></span> 🤖 Android App (${data.android_weekly_mb} MB)`;
+
+        const webLegend = document.getElementById('ti_web_legend');
+        if (webLegend) webLegend.innerHTML = `<span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> 🖥 Web Dashboard (${data.web_weekly_mb} MB)`;
+
+        // Update Settings Tab Summary
+        const setAndroidMb = document.getElementById('settings_android_mb');
+        if (setAndroidMb) setAndroidMb.textContent = `${data.android_weekly_mb} MB`;
+
+        const setWebMb = document.getElementById('settings_web_mb');
+        if (setWebMb) setWebMb.textContent = `${data.web_weekly_mb} MB`;
+
+        const setAndroidRatioBar = document.getElementById('settings_android_ratio_bar');
+        if (setAndroidRatioBar) {
+            setAndroidRatioBar.style.width = `${data.android_pct}%`;
+            setAndroidRatioBar.title = `Android App: ${data.android_pct}%`;
+        }
+
+        const setWebRatioBar = document.getElementById('settings_web_ratio_bar');
+        if (setWebRatioBar) {
+            setWebRatioBar.style.width = `${data.web_pct}%`;
+            setWebRatioBar.title = `Web Dashboard: ${data.web_pct}%`;
+        }
+
+    } catch (e) {
+        console.error("Telemetry fetch error:", e);
+    }
+}
+
+async function fetchSyncStatus() {
+    try {
+        const res = await fetch('/api/telemetry/sync', { headers: { 'X-Platform': 'Web Dashboard' } });
+        if (!res.ok) return;
+        const json = await res.json();
+        const data = json.data;
+
+        const timeEl = document.getElementById('sync_last_time');
+        if (timeEl) {
+            const diffSec = Math.floor(Date.now() / 1000 - data.last_sync);
+            timeEl.textContent = diffSec < 60 ? 'Just now' : `${Math.floor(diffSec / 60)} mins ago`;
+        }
+
+        const transEl = document.getElementById('sync_last_bytes');
+        if (transEl) transEl.textContent = `${(data.last_transferred_bytes / 1024).toFixed(1)} KB`;
+    } catch (e) {
+        console.error("Sync fetch error:", e);
+    }
+}
+
+async function triggerManualSync() {
+    try {
+        const res = await fetch('/api/telemetry/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Platform': 'Web Dashboard' },
+            body: JSON.stringify({ platform: 'Web Dashboard', bytes_transferred: Math.floor(Math.random() * 15000 + 10000) })
+        });
+        if (res.ok) {
+            fetchSyncStatus();
+            alert('Web Platform Sync Completed Successfully!');
+        }
+    } catch (e) { console.error("Manual sync error:", e); }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateAlerts();
     updateDashboardStats();
     loadRules();
     updatePackets();
-    
+    updateTelemetryUI();
+    fetchSyncStatus();
+
     setInterval(() => {
         updatePackets();
+        updateTelemetryUI();
     }, 5000);
 });
+

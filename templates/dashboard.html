@@ -11,8 +11,11 @@
 </head>
 <body>
 
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-icon"></div>
             SNSOC<span class="highlight">.live</span>
@@ -40,7 +43,10 @@
     <!-- Main Content -->
     <main class="main-wrapper">
         <header class="topbar">
-            <h2>Real-Time Operations Dashboard</h2>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="mobile-toggle" id="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation menu">☰</button>
+                <h2>Real-Time Operations Dashboard</h2>
+            </div>
             <div class="system-status-pill">
                 <div class="dot green"></div> System Active
             </div>
@@ -60,8 +66,8 @@
                 <!-- Threat Level -->
                 <div class="panel">
                     <div class="panel-subtitle">THREAT LEVEL</div>
-                    <div class="panel-value critical-text" id="dynamic_level">CRITICAL</div>
-                    <div class="panel-footer">Based on ML & Heuristics</div>
+                    <div class="panel-value" id="dynamic_level" style="color: var(--low);">LOW</div>
+                    <div class="panel-footer">Based on network statistics</div>
                 </div>
 
                 <!-- Protocol Distribution -->
@@ -174,6 +180,35 @@
                 </div>
                 <div id="lookup_result" class="lookup-result"></div>
             </div>
+
+            <!-- API Data Consumption Card -->
+            <div class="panel" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="panel-subtitle" style="margin-bottom: 0;">API DATA CONSUMPTION</div>
+                    <span id="ti_monthly_usage_pill" style="background: rgba(31, 111, 235, 0.15); color: var(--accent-blue); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(31, 111, 235, 0.3);">142.8 KB used this month</span>
+                </div>
+                <p class="panel-desc">Payload bandwidth comparison between Android App and Web Dashboard API requests.</p>
+                
+                <!-- Horizontal Comparison Bar -->
+                <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600;">
+                        <span>Weekly Android App API Usage vs Web Dashboard</span>
+                        <span id="ti_ratio_text" style="color: var(--text-muted);">Android: 32% | Web: 68%</span>
+                    </div>
+                    <div style="height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; display: flex;">
+                        <div id="ti_android_bar" style="width: 32%; background: var(--accent-blue);" title="Android App: 4.12 MB"></div>
+                        <div id="ti_web_bar" style="width: 68%; background: #8b5cf6;" title="Web Dashboard: 8.94 MB"></div>
+                    </div>
+                    <div style="display: flex; gap: 20px; margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                        <div id="ti_android_legend" style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--accent-blue); display: inline-block;"></span> 🤖 Android App (4.12 MB)
+                        </div>
+                        <div id="ti_web_legend" style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> 🖥 Web Dashboard (8.94 MB)
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Settings Tab -->
@@ -181,7 +216,87 @@
             <div class="panel">
                 <div class="panel-subtitle">SYSTEM SETTINGS</div>
                 <p class="panel-desc">General system configuration options.</p>
-                <!-- Placeholder for future settings -->
+                <div class="input-group-full">
+                    <label>Operator Email</label>
+                    <input type="text" value="sivachaitanya72@gmail.com" class="styled-input" readonly>
+                </div>
+            </div>
+
+            <!-- Card A: Data Usage Settings -->
+            <div class="panel" style="margin-top: 24px;">
+                <div class="panel-subtitle">DATA USAGE SETTINGS</div>
+                <p class="panel-desc">Configure bandwidth and telemetry optimization policies.</p>
+                
+                <div class="checkbox-group" style="margin-bottom: 16px;">
+                    <input type="checkbox" id="low_data_mode">
+                    <label for="low_data_mode">Low Data Mode (reduces background polling frequency)</label>
+                </div>
+
+                <div class="input-group-full" style="margin-bottom: 16px;">
+                    <label>Data Refresh Interval</label>
+                    <select class="styled-input" id="refresh_interval">
+                        <option value="30s">30 seconds (Default)</option>
+                        <option value="1m">1 minute</option>
+                        <option value="5m">5 minutes</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-group" style="margin-bottom: 0;">
+                    <input type="checkbox" id="wifi_only_sync" checked>
+                    <label for="wifi_only_sync">Sync on Wi-Fi Only (prevents cellular data overage)</label>
+                </div>
+            </div>
+
+            <!-- Card B: Platform Sync Status -->
+            <div class="panel" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="panel-subtitle" style="margin-bottom: 0;">PLATFORM SYNC STATUS</div>
+                    <div class="system-status-pill">
+                        <div class="dot green"></div> In Sync
+                    </div>
+                </div>
+                <p class="panel-desc">Real-time telemetry synchronization between Android Mobile App and Web Dashboard.</p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; margin-bottom: 16px;">
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">LAST SYNC TIMESTAMP</div>
+                        <div id="sync_last_time" style="font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: var(--text-main);">2 mins ago</div>
+                    </div>
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">DATA TRANSFERRED</div>
+                        <div id="sync_last_bytes" style="font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: var(--low);">24.5 KB</div>
+                    </div>
+                </div>
+                <button class="styled-btn full-width" style="background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color);" onclick="triggerManualSync()">🔄 Force Manual Web Platform Sync</button>
+            </div>
+
+            <!-- Card C: Data Consumption Summary -->
+            <div class="panel" style="margin-top: 24px;">
+                <div class="panel-subtitle">DATA CONSUMPTION SUMMARY</div>
+                <p class="panel-desc">Weekly telemetry bandwidth breakdown by client platform.</p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div style="background: var(--bg-dark); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 16px; text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">🤖 Android App</div>
+                        <div id="settings_android_mb" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue); margin: 4px 0;">4.12 MB</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">This Week</div>
+                    </div>
+
+                    <div style="background: var(--bg-dark); border: 1px solid #8b5cf6; border-radius: 8px; padding: 16px; text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">🖥 Web Dashboard</div>
+                        <div id="settings_web_mb" style="font-size: 1.8rem; font-weight: 700; color: #8b5cf6; margin: 4px 0;">8.94 MB</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">This Week</div>
+                    </div>
+                </div>
+
+                <!-- Comparison Bar -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Platform Consumption Ratio</div>
+                    <div style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; display: flex;">
+                        <div id="settings_android_ratio_bar" style="width: 32%; background: var(--accent-blue);" title="Android App: 32%"></div>
+                        <div id="settings_web_ratio_bar" style="width: 68%; background: #8b5cf6;" title="Web Dashboard: 68%"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -211,13 +326,28 @@
     </div>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(tabId + '-tab').classList.add('active-tab');
             el.classList.add('active');
+            closeSidebar();
         }
     </script>
-    <script src="{{ url_for('static', filename='charts.js') }}?v=5.0"></script>
+    <script src="{{ url_for('static', filename='charts.js') }}?v=6.0"></script>
 </body>
 </html>

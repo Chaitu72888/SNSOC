@@ -22,7 +22,10 @@ def check_ip(ip):
             "ip": ip,
             "score": 100 if flagged else 0,
             "flagged": flagged,
-            "source": "mock"
+            "source": "mock",
+            "countryCode": "RU" if flagged else "US",
+            "asn": "AS12345 MockNet" if flagged else "AS54321 SafeNet",
+            "country_risk": "HIGH" if flagged else "LOW"
         }
         
     # Real mode
@@ -38,11 +41,15 @@ def check_ip(ip):
         if resp.status_code == 200:
             data = resp.json().get('data', {})
             score = data.get('abuseConfidenceScore', 0)
+            countryCode = data.get('countryCode', 'Unknown')
             return {
                 "ip": ip,
                 "score": score,
                 "flagged": score > 50,
-                "source": "abuseipdb"
+                "source": "abuseipdb",
+                "countryCode": countryCode,
+                "asn": f"AS{data.get('asn', 'Unknown')} {data.get('isp', '')}",
+                "country_risk": "HIGH" if countryCode in ['RU', 'CN', 'KP', 'IR'] else "LOW"
             }
     except Exception as e:
         logger.error(f"AbuseIPDB request failed: {e}")
@@ -51,5 +58,8 @@ def check_ip(ip):
         "ip": ip,
         "score": 0,
         "flagged": False,
-        "source": "error_fallback"
+        "source": "error_fallback",
+        "countryCode": "Unknown",
+        "asn": "Unknown",
+        "country_risk": "UNKNOWN"
     }

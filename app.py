@@ -1,12 +1,13 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request
 from flask_socketio import SocketIO
 from flask_login import LoginManager, login_required
 from config import Config
-from models import db, Operator, IDSRule
+from models import db, Operator, IDSRule, APIDataLog, PlatformSync, DataUsageSetting
 import bcrypt
 import json
+import time
 
-socketio = SocketIO(cors_allowed_origins=["http://localhost:3000", "http://127.0.0.1:5000"])
+socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
     app = Flask(__name__)
@@ -22,6 +23,13 @@ def create_app():
     def load_user(user_id):
         return Operator.query.get(int(user_id))
 
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Platform'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
+
     with app.app_context():
         db.create_all()
         seed_db()
@@ -32,12 +40,14 @@ def create_app():
     from api.ids import ids_bp
     from api.intel import intel_bp
     from api.block import block_bp
+    from api.telemetry import telemetry_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/api')
     app.register_blueprint(ids_bp, url_prefix='/api/ids')
     app.register_blueprint(intel_bp, url_prefix='/api/intel')
     app.register_blueprint(block_bp, url_prefix='/api')
+    app.register_blueprint(telemetry_bp, url_prefix='/api/telemetry')
 
     @app.route('/')
     @login_required
@@ -66,9 +76,29 @@ def seed_db():
     
     if not IDSRule.query.filter_by(rule_type='threshold').first():
         db.session.add(IDSRule(rule_type='threshold', value=json.dumps({"max_packets": 100, "window_seconds": 10})))
-    
+
+    if not DataUsageSetting.query.first():
+        db.session.add(DataUsageSetting(low_data_mode=False, refresh_interval='30s', wifi_only_sync=True, alert_threshold_mb=50.0))
+
+    if not PlatformSync.query.first():
+        db.session.add(PlatformSync(platform='Android App', last_sync=time.time() - 120, last_transferred_bytes=25088, sync_status='In Sync'))
+        db.session.add(PlatformSync(platform='Web Dashboard', last_sync=time.time() - 45, last_transferred_bytes=39520, sync_status='In Sync'))
+
+    if not APIDataLog.query.first():
+        now = time.time()
+        # Seed realistic initial data logs for both Android and Web
+        seeds = [
+            APIDataLog(timestamp=now - 600, endpoint='/api/intel/lookup', platform='Android App', bytes_sent=420, bytes_recv=1840, ip='185.15.1.100', zone='Zone 1 (Main Stadium)', status='Malicious', score=88),
+            APIDataLog(timestamp=now - 1500, endpoint='/api/intel/lookup', platform='Web Dashboard', bytes_sent=310, bytes_recv=1120, ip='8.8.8.8', zone='Zone 2 (Concourse)', status='Clean', score=0),
+            APIDataLog(timestamp=now - 3600, endpoint='/api/intel/lookup', platform='Android App', bytes_sent=510, bytes_recv=2150, ip='192.168.1.45', zone='Zone 3 (VIP Lounge)', status='Suspicious', score=45),
+            APIDataLog(timestamp=now - 7200, endpoint='/api/intel/lookup', platform='Android App', bytes_sent=430, bytes_recv=1920, ip='45.33.32.156', zone='Zone 1 (Main Stadium)', status='Malicious', score=92),
+            APIDataLog(timestamp=now - 14400, endpoint='/api/intel/lookup', platform='Web Dashboard', bytes_sent=340, bytes_recv=1280, ip='1.1.1.1', zone='Zone 2 (Concourse)', status='Clean', score=0)
+        ]
+        db.session.add_all(seeds)
+
     db.session.commit()
 
 if __name__ == '__main__':
     app = create_app()
-    socketio.run(app, debug=True, host='127.0.0.1', port=5000, use_reloader=False)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, use_reloader=False, allow_unsafe_werkzeug=True)
+
