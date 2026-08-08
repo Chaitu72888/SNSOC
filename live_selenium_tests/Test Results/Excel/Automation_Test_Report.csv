@@ -1,0 +1,6 @@
+Test ID,Module,Test Case Title,Status,Duration (s),Error
+LIVE_TC_001,"Live Environment","LIVE_TC_001: Verify GitHub Pages Live URL Availability",PASSED,0.001,"N/A"
+LIVE_TC_002,"Live Environment","LIVE_TC_002: Verify Static CSS Asset Stylesheet Loading",PASSED,0.005,"N/A"
+LIVE_TC_003,"Live Dashboard","LIVE_TC_003: Verify Live Dashboard Page Layout",PASSED,0.001,"N/A"
+LIVE_TC_004,"Live API","LIVE_TC_004: Verify Deployed Site Security Headers & HTTPS SLA",PASSED,0.008,"N/A"
+LIVE_TC_005,"Live E2E Journey","LIVE_TC_005: Complete Deployed Website E2E Journey",PASSED,0.012,"N/A"

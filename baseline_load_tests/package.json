@@ -1,0 +1,12 @@
+{
+  "name": "snsoc-baseline-load-tests",
+  "version": "1.0.0",
+  "description": "100 Virtual Users 1-Minute Baseline/Load Testing Suite with RPS and Min/Max/Avg Latency Excel Report Generation",
+  "main": "run_load_tests.js",
+  "scripts": {
+    "test": "node run_load_tests.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

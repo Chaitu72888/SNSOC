@@ -1,68 +1,35 @@
+import os
+import json
+import time
 from flask import Flask, render_template, redirect, url_for, request
 from flask_socketio import SocketIO
 from flask_login import LoginManager, login_required
 from config import Config
 from models import db, Operator, IDSRule, APIDataLog, PlatformSync, DataUsageSetting
 import bcrypt
-import json
-import time
 
-socketio = SocketIO(cors_allowed_origins="*")
+app = Flask(__name__)
+app.config.from_object(Config)
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
+db.init_app(app)
 
-    db.init_app(app)
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.init_app(app)
 
-    login_manager = LoginManager()
-    login_manager.login_view = 'auth.login'
-    login_manager.init_app(app)
+socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
+socketio.init_app(app)
 
-    @login_manager.user_loader
-    def load_user(user_id):
-        return Operator.query.get(int(user_id))
+@login_manager.user_loader
+def load_user(user_id):
+    return Operator.query.get(int(user_id))
 
-    @app.after_request
-    def add_cors_headers(response):
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Platform'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        return response
-
-    with app.app_context():
-        db.create_all()
-        seed_db()
-
-    # Register Blueprints
-    from auth import auth_bp
-    from api.dashboard import dashboard_bp
-    from api.ids import ids_bp
-    from api.intel import intel_bp
-    from api.block import block_bp
-    from api.telemetry import telemetry_bp
-
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(dashboard_bp, url_prefix='/api')
-    app.register_blueprint(ids_bp, url_prefix='/api/ids')
-    app.register_blueprint(intel_bp, url_prefix='/api/intel')
-    app.register_blueprint(block_bp, url_prefix='/api')
-    app.register_blueprint(telemetry_bp, url_prefix='/api/telemetry')
-
-    @app.route('/')
-    @login_required
-    def dashboard():
-        return render_template('dashboard.html')
-
-    socketio.init_app(app)
-    
-    # Start background tasks
-    from engine.capture import start_capture_thread
-    from engine.scorer import start_stats_thread
-    start_capture_thread(app, socketio)
-    start_stats_thread(app, socketio)
-
-    return app
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Platform'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    return response
 
 def seed_db():
     if not Operator.query.first():
@@ -86,7 +53,6 @@ def seed_db():
 
     if not APIDataLog.query.first():
         now = time.time()
-        # Seed realistic initial data logs for both Android and Web
         seeds = [
             APIDataLog(timestamp=now - 600, endpoint='/api/intel/lookup', platform='Android App', bytes_sent=420, bytes_recv=1840, ip='185.15.1.100', zone='Zone 1 (Main Stadium)', status='Malicious', score=88),
             APIDataLog(timestamp=now - 1500, endpoint='/api/intel/lookup', platform='Web Dashboard', bytes_sent=310, bytes_recv=1120, ip='8.8.8.8', zone='Zone 2 (Concourse)', status='Clean', score=0),
@@ -98,7 +64,36 @@ def seed_db():
 
     db.session.commit()
 
-if __name__ == '__main__':
-    app = create_app()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, use_reloader=False, allow_unsafe_werkzeug=True)
+# Register Blueprints
+from auth import auth_bp
+from api.dashboard import dashboard_bp
+from api.ids import ids_bp
+from api.intel import intel_bp
+from api.block import block_bp
+from api.telemetry import telemetry_bp
 
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(dashboard_bp, url_prefix='/api')
+app.register_blueprint(ids_bp, url_prefix='/api/ids')
+app.register_blueprint(intel_bp, url_prefix='/api/intel')
+app.register_blueprint(block_bp, url_prefix='/api')
+app.register_blueprint(telemetry_bp, url_prefix='/api/telemetry')
+
+@app.route('/')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+
+with app.app_context():
+    db.create_all()
+    seed_db()
+
+# Start background tasks
+from engine.capture import start_capture_thread
+from engine.scorer import start_stats_thread
+start_capture_thread(app, socketio)
+start_stats_thread(app, socketio)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

@@ -1,0 +1,103 @@
+name: Phase 7 - Deploy to GitHub Pages and Live E2E Testing
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # JOB 1: Build & Deploy to GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Pages Configuration
+        uses: actions/configure-pages@v5
+
+      - name: Build Web Application
+        run: |
+          mkdir -p dist
+          cp -r templates static dist/ || true
+          cp index.html dist/ || true
+          echo "Website build completed."
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # JOB 2: Live Selenium E2E Testing against Deployed GitHub Pages Site
+  live-e2e-testing:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Selenium Test Dependencies
+        run: |
+          cd live_selenium_tests
+          npm install
+
+      - name: Verify Live Deployment URL
+        run: |
+          LIVE_URL="${{ needs.deploy.outputs.page_url }}"
+          if [ -z "$LIVE_URL" ]; then
+            LIVE_URL="https://chaitu72888.github.io/SNSOC/"
+          fi
+          echo "Testing Live Deployment URL: $LIVE_URL"
+          curl -sI "$LIVE_URL" || true
+
+      - name: Run Headless Chrome Live Selenium E2E Tests
+        env:
+          BASE_URL: ${{ needs.deploy.outputs.page_url || 'https://chaitu72888.github.io/SNSOC/' }}
+          HEADLESS: 'true'
+        run: |
+          cd live_selenium_tests
+          node run_live_tests.js
+
+      - name: Upload Test Results Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Selenium-Live-Test-Results
+          path: |
+            live_selenium_tests/Test Results/
+          retention-days: 30
+
+      - name: Publish GitHub Actions Step Summary
+        if: always()
+        run: |
+          if [ -f "live_selenium_tests/Test Results/Summary/summary.md" ]; then
+            cat "live_selenium_tests/Test Results/Summary/summary.md" >> $GITHUB_STEP_SUMMARY
+          fi

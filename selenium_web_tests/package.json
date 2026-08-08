@@ -1,0 +1,13 @@
+{
+  "name": "snsoc-selenium-web-tests",
+  "version": "1.0.0",
+  "description": "Node.js Selenium Web Application End-to-End Testing Suite with Excel Report Generation",
+  "main": "run_selenium_web_tests.js",
+  "scripts": {
+    "test": "node run_selenium_web_tests.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "selenium-webdriver": "^4.46.0"
+  }
+}
