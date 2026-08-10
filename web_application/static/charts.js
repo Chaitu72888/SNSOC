@@ -9,8 +9,8 @@ Chart.defaults.font.family = "'Inter', sans-serif";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let areaChart, doughnutChart;
-let livePacketCount = 0;   // counts packets received this second via socket
-let trafficTickBuffer = 0; // accumulates per-tick before pushing to chart
+let ppsCounter = 0;         // packets received THIS second via socket → drives traffic chart
+let totalSocketPackets = 0; // total packets received via socket since page load
 
 // ─── Socket.IO Connection ─────────────────────────────────────────────────────
 const socket = io({
@@ -167,17 +167,21 @@ function prependPacketRow(pkt) {
 
 // Every new packet from the capture loop (~1-2s interval)
 socket.on('new_packet', (pkt) => {
-    // 1. Increment live packet counter
-    trafficTickBuffer++;
+    ppsCounter++;          // increment per-second counter for traffic chart
+    totalSocketPackets++;  // running total
 
-    // 2. Update live packet table
+    // 1. Prepend to live packet table
     prependPacketRow(pkt);
 
-    // 3. Update total packet count display
+    // 2. Flash packet count with live increment
     const packetsEl = document.getElementById('total_packets_count');
     if (packetsEl) {
         const current = parseInt(packetsEl.textContent.replace(/,/g, '') || '0');
         packetsEl.textContent = (current + 1).toLocaleString();
+        // Brief glow animation to show liveness
+        packetsEl.style.transition = 'color 0.15s';
+        packetsEl.style.color = '#3b82f6';
+        setTimeout(() => { packetsEl.style.color = ''; }, 300);
     }
 });
 
@@ -207,10 +211,10 @@ socket.on('new_alert', () => {
 });
 
 // ─── 1-Second Traffic Tick ────────────────────────────────────────────────────
-// Pushes buffered packet count to the line chart every second
+// Every second: snapshot ppsCounter → traffic chart, then reset
 setInterval(() => {
-    pushTrafficPoint(trafficTickBuffer);
-    trafficTickBuffer = 0;
+    pushTrafficPoint(ppsCounter);
+    ppsCounter = 0;
 }, 1000);
 
 // ─── HTTP Polling — Fallback & Top IPs ───────────────────────────────────────
