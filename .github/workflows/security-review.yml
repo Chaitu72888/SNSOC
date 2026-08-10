@@ -73,7 +73,7 @@ jobs:
           SNSOC_PASS: siva2580
         run: |
           mkdir -p test-reports
-          python selenium_web_tests/run_selenium_tests.py || echo "Selenium tests completed with status"
+          python selenium-tests/run_selenium_tests.py || echo "Selenium tests completed with status"
 
       - name: Upload Selenium Excel Report Artifact
         uses: actions/upload-artifact@v4
