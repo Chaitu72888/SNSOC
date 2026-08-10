@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import os
 import json
 import time
@@ -17,7 +19,9 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet',
+                   ping_timeout=60, ping_interval=25,
+                   logger=False, engineio_logger=False)
 socketio.init_app(app)
 
 @login_manager.user_loader

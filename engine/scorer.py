@@ -68,7 +68,7 @@ def compute_threat_level(app):
 def stats_loop(app, socketio):
     from engine.capture import get_packet_stats
     while True:
-        socketio.sleep(5)
+        socketio.sleep(2)
         threat = compute_threat_level(app)
         stats = get_packet_stats()
         
