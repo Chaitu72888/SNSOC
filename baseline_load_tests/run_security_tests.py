@@ -39,15 +39,26 @@ print(f"\n[Security Test Suite] SNSOC Backend Security Assessment")
 print(f"Target: {BASE_URL}")
 print("=" * 65)
 
-# Login authed session
+# Login authed session (with retry for Render cold start)
 print("\n[+] Establishing authenticated session...")
-r = authed.post(f"{BASE_URL}/auth/login",
-                data={"username": USERNAME, "passcode": PASSWORD},
-                allow_redirects=True, timeout=15)
-if r.status_code == 200 and "login" not in r.url:
-    print(f"    [OK] Logged in as '{USERNAME}'")
-else:
-    print(f"    [!!] Auth failed (HTTP {r.status_code}) — some tests may show false FAIL")
+auth_success = False
+for attempt in range(1, 4):
+    try:
+        r = authed.post(f"{BASE_URL}/auth/login",
+                        data={"username": USERNAME, "passcode": PASSWORD},
+                        allow_redirects=True, timeout=30)
+        if r.status_code == 200 and "login" not in r.url:
+            print(f"    [OK] Logged in as '{USERNAME}' (Attempt {attempt})")
+            auth_success = True
+            break
+        else:
+            print(f"    [!] Login attempt {attempt} returned HTTP {r.status_code}")
+    except Exception as e:
+        print(f"    [!] Login attempt {attempt} failed: {e}")
+        time.sleep(3)
+
+if not auth_success:
+    print("    [!!] Auth failed after 3 attempts — continuing test execution with unauthenticated session")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 1 — AUTHENTICATION
