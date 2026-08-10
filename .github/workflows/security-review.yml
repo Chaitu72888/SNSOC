@@ -179,21 +179,26 @@ jobs:
       - name: Organize All 4 Excel Reports
         run: |
           mkdir -p final-excel-package
-          find all-reports/ -name "*.xlsx" -exec cp {} final-excel-package/ \;
           
+          # Find and copy/normalize exact reports from each job's artifact
+          find all-reports/ -name "appium*.xlsx" -exec cp {} final-excel-package/appium-test-report.xlsx \; 2>/dev/null || true
+          find all-reports/ -name "*selenium*.xlsx" -o -name "login_test_cases*.xlsx" | head -1 | xargs -I {} cp {} final-excel-package/selenium-test-report.xlsx 2>/dev/null || true
+          find all-reports/ -name "security*.xlsx" -exec cp {} final-excel-package/security-test-report.xlsx \; 2>/dev/null || true
+          find all-reports/ -name "baseline*.xlsx" -o -name "Load_Test*.xlsx" | head -1 | xargs -I {} cp {} final-excel-package/baseline-load-test-report.xlsx 2>/dev/null || true
+
           echo "## 📊 All 4 Test Excel Reports Package" >> $GITHUB_STEP_SUMMARY
           echo "| Test Suite | Report Filename | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------------|-----------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 📱 Appium Mobile | \`appium-test-report.xlsx\` | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Selenium Web UI | \`selenium-test-report.xlsx\` | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🛡️ Security Assessment | \`security-test-report.xlsx\` | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Baseline Load | \`baseline-load-test-report.xlsx\` | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 Appium Mobile | \`appium-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Selenium Web UI | \`selenium-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ Security Assessment | \`security-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Baseline Load | \`baseline-load-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Download Instructions" >> $GITHUB_STEP_SUMMARY
-          echo "Scroll to the **Artifacts** section at the bottom of this workflow run to download \`SNSOC-All-4-Test-Excel-Reports.zip\`." >> $GITHUB_STEP_SUMMARY
+          echo "Download \`SNSOC-All-4-Test-Excel-Reports.zip\` from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
 
-          ls -la final-excel-package/
+          ls -lh final-excel-package/
 
       - name: Upload Consolidated 4-Test Excel Package
         uses: actions/upload-artifact@v4
