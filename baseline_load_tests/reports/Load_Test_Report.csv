@@ -1,6 +1,6 @@
 Metric Name,Value,Standard,Evaluation
 Concurrent Virtual Users,100,100 VUs,NORMAL LOAD
-Test Duration,60.3s,60s,FULL DURATION
+Test Duration,60.2s,60s,FULL DURATION
 Total Requests,7200,Thousands,HIGH VOLUME
 Requests Per Second (RPS),120 req/sec,> 100 RPS,PASS
 Average Latency,250 ms,< 500 ms,FAST

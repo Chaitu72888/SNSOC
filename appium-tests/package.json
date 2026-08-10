@@ -1,0 +1,29 @@
+{
+  "name": "snsoc-appium-tests",
+  "version": "1.0.0",
+  "description": "Appium E2E Automation Functional Test Suite for SNSOC Android Application",
+  "main": "tests/appium-app-tests.js",
+  "scripts": {
+    "test": "node tests/appium-app-tests.js",
+    "test:mocha": "npx mocha tests/appium-app-tests.js --timeout 120000"
+  },
+  "keywords": [
+    "appium",
+    "webdriverio",
+    "android",
+    "e2e",
+    "testing",
+    "snsoc",
+    "uiautomator2"
+  ],
+  "author": "SNSOC QA Mobile Automation Team",
+  "license": "ISC",
+  "dependencies": {
+    "appium": "^2.5.1",
+    "webdriverio": "^8.32.4"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.3.0"
+  }
+}

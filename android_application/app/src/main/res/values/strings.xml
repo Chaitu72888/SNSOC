@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SNSOC Mobile</string>
+    <string name="title_login">SOC Operator Portal</string>
+    <string name="subtitle_login">Sign in to access security console</string>
+    <string name="label_username">Username / Operator Email</string>
+    <string name="label_password">Passcode / Password</string>
+    <string name="btn_login">Sign In</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_intel">Threat Intel</string>
+    <string name="nav_ids">IDS Rules</string>
+    <string name="nav_telemetry">Telemetry</string>
+    <string name="nav_blocked">Blocked IPs</string>
+    <string name="title_threat_score">Global Threat Level</string>
+    <string name="title_active_alerts">Active Alerts</string>
+    <string name="title_packets_monitored">Packets Monitored</string>
+    <string name="title_blocked_ips">Blocked IPs</string>
+    <string name="title_recent_alerts">Recent Security Events</string>
+    <string name="btn_lookup">Analyze IP</string>
+    <string name="hint_ip_address">Enter IP address (e.g. 185.15.1.100)</string>
+    <string name="title_protected_ports">Protected Network Ports</string>
+    <string name="btn_add_port">Add Port</string>
+    <string name="title_rate_threshold">Alert Threshold Config</string>
+    <string name="title_data_usage">Data Saver &amp; Telemetry</string>
+    <string name="title_monthly_usage">Monthly Consumption</string>
+    <string name="title_weekly_usage">Weekly Consumption</string>
+    <string name="label_low_data_mode">Low Data Sync Mode</string>
+    <string name="btn_sync_now">Sync Telemetry Now</string>
+    <string name="title_block_ip">Block New IP Address</string>
+    <string name="btn_block">Block IP</string>
+</resources>

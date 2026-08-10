@@ -1,0 +1,29 @@
+{
+  "name": "snsoc-selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium WebDriver E2E Functional Test Suite for SNSOC Web Frontend",
+  "main": "tests/login-tests.js",
+  "scripts": {
+    "test": "node tests/login-tests.js",
+    "test:mocha": "npx mocha tests/login-tests.js --timeout 60000"
+  },
+  "keywords": [
+    "selenium",
+    "webdriver",
+    "e2e",
+    "testing",
+    "snsoc",
+    "login"
+  ],
+  "author": "SNSOC QA Automation Team",
+  "license": "ISC",
+  "dependencies": {
+    "chromedriver": "^122.0.0",
+    "geckodriver": "^4.3.0",
+    "selenium-webdriver": "^4.18.1"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.3.0"
+  }
+}

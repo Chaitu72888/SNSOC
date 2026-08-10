@@ -1,0 +1,11 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-soc-secret-key')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'snsoc.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    ABUSEIPDB_API_KEY = os.environ.get('ABUSEIPDB_API_KEY', '')
+    MOCK_TI_MODE = os.environ.get('MOCK_TI_MODE', 'true').lower() == 'true'
