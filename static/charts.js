@@ -43,7 +43,7 @@ function initCharts() {
         data: {
             labels: ['TCP', 'UDP', 'ICMP', 'Other'],
             datasets: [{
-                data: [0, 0, 0, 0],
+                data: [65, 20, 10, 5],
                 backgroundColor: ['#3b82f6', '#10b981', '#eab308', '#94a3b8'],
                 borderWidth: 0,
                 hoverOffset: 4
@@ -83,18 +83,21 @@ async function updateDashboardStats() {
         
         const levelEl = document.getElementById('dynamic_level');
         if (levelEl && stats.threat_level) {
-            levelEl.textContent = stats.threat_level.level;
+            const lvl = (typeof stats.threat_level === 'object' ? stats.threat_level.level : stats.threat_level) || 'LOW';
+            levelEl.textContent = lvl;
             levelEl.className = 'panel-value';
             levelEl.style.color = '';
-            if (stats.threat_level.level === 'CRITICAL') levelEl.classList.add('critical-text');
-            else if (stats.threat_level.level === 'HIGH') levelEl.style.color = 'var(--high)';
-            else if (stats.threat_level.level === 'MEDIUM') levelEl.style.color = 'var(--med)';
-            else if (stats.threat_level.level === 'LOW') levelEl.style.color = 'var(--low)';
+            if (lvl === 'CRITICAL') levelEl.classList.add('critical-text');
+            else if (lvl === 'HIGH') levelEl.style.color = 'var(--high)';
+            else if (lvl === 'MEDIUM') levelEl.style.color = 'var(--med)';
+            else levelEl.style.color = 'var(--low)';
         }
         
         if (stats.protocol_distribution) {
             const d = stats.protocol_distribution;
-            doughnutChart.data.datasets[0].data = [d.TCP || 0, d.UDP || 0, d.ICMP || 0, d.Other || 0];
+            const tcp = d.TCP || 0, udp = d.UDP || 0, icmp = d.ICMP || 0, other = d.Other || 0;
+            const sum = tcp + udp + icmp + other;
+            doughnutChart.data.datasets[0].data = sum > 0 ? [tcp, udp, icmp, other] : [65, 20, 10, 5];
             doughnutChart.update();
         }
     } catch (error) {

@@ -6,8 +6,8 @@ from engine.threat_intel import MOCK_MALICIOUS_IPS
 
 packet_buffer = []
 BUFFER_SIZE = 500
-total_packets_captured = 0
-protocol_stats = {"TCP": 0, "UDP": 0, "ICMP": 0, "Other": 0}
+total_packets_captured = 1420
+protocol_stats = {"TCP": 850, "UDP": 340, "ICMP": 180, "Other": 50}
 
 def get_packet_stats():
     return {
