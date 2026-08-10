@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   all-tests-and-excel-reports:
@@ -47,7 +45,6 @@ jobs:
       # TEST 1: Baseline Load Tests (100 VUs / 1 Minute)
       # =========================================================================
       - name: Setup & Run Baseline Load Tests
-        continue-on-error: true
         run: |
           cd baseline_load_tests
           npm install || true
@@ -80,7 +77,6 @@ jobs:
       # TEST 4: Live Selenium Deployment E2E Tests
       # =========================================================================
       - name: Setup & Run Live Selenium Web E2E Tests
-        continue-on-error: true
         run: |
           cd live_selenium_tests
           npm install || true
