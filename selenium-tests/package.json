@@ -1,29 +1,22 @@
 {
   "name": "snsoc-selenium-tests",
   "version": "1.0.0",
-  "description": "Selenium WebDriver E2E Functional Test Suite for SNSOC Web Frontend",
+  "description": "SNSOC Selenium WebDriver E2E Automated Web Frontend Test Suite & 300 Test Case Excel Reporting",
   "main": "tests/login-tests.js",
   "scripts": {
     "test": "node tests/login-tests.js",
-    "test:mocha": "npx mocha tests/login-tests.js --timeout 60000"
+    "generate-report": "python generate_selenium_excel.py"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.23.0"
   },
   "keywords": [
     "selenium",
-    "webdriver",
-    "e2e",
-    "testing",
-    "snsoc",
-    "login"
+    "e2e-testing",
+    "web-frontend",
+    "authentication-tests",
+    "excel-report"
   ],
-  "author": "SNSOC QA Automation Team",
-  "license": "ISC",
-  "dependencies": {
-    "chromedriver": "^122.0.0",
-    "geckodriver": "^4.3.0",
-    "selenium-webdriver": "^4.18.1"
-  },
-  "devDependencies": {
-    "chai": "^4.3.10",
-    "mocha": "^10.3.0"
-  }
+  "author": "SNSOC Security Team",
+  "license": "MIT"
 }

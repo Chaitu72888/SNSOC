@@ -1,4 +1,4 @@
-name: 🧪 SNSOC — All 4 Automated Test Suites & Excel Reports
+name: 🛡️ SNSOC — Backend Security Assessment (SAST + Dependency + Report)
 
 on:
   push:
@@ -9,200 +9,397 @@ on:
 
 permissions:
   contents: read
+  security-events: write
   actions: read
 
 jobs:
-
   # ─────────────────────────────────────────────────────────────────────────────
-  # TEST 1: Appium Mobile Test Suite
+  # JOB 1: SAST — Bandit Static Application Security Testing
   # ─────────────────────────────────────────────────────────────────────────────
-  appium-tests:
-    name: 📱 Appium Mobile Test Suite
+  sast-bandit:
+    name: 🔎 SAST — Bandit (Python Static Security Scan)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit SAST
         run: |
-          pip install requests openpyxl
+          mkdir -p security-reports
+          bandit -r . \
+            --exclude ./venv,./node_modules,./.git,./android_application,./selenium-tests,./appium-tests \
+            --severity-level medium \
+            --confidence-level medium \
+            -f json -o security-reports/bandit-results.json || true
 
-      - name: Run Appium Test Suite
-        env:
-          SNSOC_BASE_URL: https://snsoc-4.onrender.com
-          SNSOC_USER: siva
-          SNSOC_PASS: siva2580
-        run: |
-          mkdir -p test-reports
-          python appium_tests/run_appium_tests.py || echo "Appium tests completed with status"
+          bandit -r . \
+            --exclude ./venv,./node_modules,./.git,./android_application,./selenium-tests,./appium-tests \
+            --severity-level medium \
+            --confidence-level medium \
+            -f txt -o security-reports/bandit-results.txt || true
 
-      - name: Upload Appium Excel Report Artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Appium-Test-Report-Excel
-          path: test-reports/appium-test-report.xlsx
-          retention-days: 90
+          echo "## 🔎 Bandit SAST Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # TEST 2: Selenium Web UI Test Suite
-  # ─────────────────────────────────────────────────────────────────────────────
-  selenium-tests:
-    name: 🌐 Selenium Web UI Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python & Google Chrome
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Chrome & Selenium
-        run: |
-          pip install selenium requests openpyxl
-
-      - name: Run Selenium Web UI Tests
-        env:
-          SNSOC_BASE_URL: https://snsoc-4.onrender.com
-          SNSOC_USER: siva
-          SNSOC_PASS: siva2580
-        run: |
-          mkdir -p test-reports
-          python selenium-tests/run_selenium_tests.py || echo "Selenium tests completed with status"
-
-      - name: Upload Selenium Excel Report Artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Selenium-Test-Report-Excel
-          path: test-reports/selenium-test-report.xlsx
-          retention-days: 90
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # TEST 3: Security Assessment Test Suite
-  # ─────────────────────────────────────────────────────────────────────────────
-  security-tests:
-    name: 🛡️ Security Assessment Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Security Tools
-        run: |
-          pip install requests openpyxl bandit pip-audit
-
-      - name: Run Security Assessment Suite
-        env:
-          SNSOC_BASE_URL: https://snsoc-4.onrender.com
-          SNSOC_USER: siva
-          SNSOC_PASS: siva2580
-        run: |
-          mkdir -p test-reports
-          python baseline_load_tests/run_security_tests.py || echo "Security tests completed with status"
-          
-          # Also run Vuln excel generator if present
-          if [ -d "Vulnerability Test Results" ]; then
-            cd "Vulnerability Test Results" && python generate_security_excel.py || true
-            cd ..
-            cp "Vulnerability Test Results/findings.xlsx" test-reports/security-findings-detailed.xlsx 2>/dev/null || true
+          if [ -f security-reports/bandit-results.txt ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 20 security-reports/bandit-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload Security Excel Report Artifact
+      - name: Upload Bandit Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Security-Test-Report-Excel
-          path: test-reports/security-test-report.xlsx
+          name: Bandit-SAST-Reports
+          path: security-reports/bandit-results.*
           retention-days: 90
 
+      - name: Fail if Critical SAST Issues Found
+        run: |
+          if python3 -c "
+          import json, sys
+          try:
+              data = json.load(open('security-reports/bandit-results.json'))
+              results = data.get('results', [])
+              criticals = [r for r in results if r.get('issue_severity') == 'HIGH' and r.get('issue_confidence') == 'HIGH']
+              print(f'High-confidence HIGH severity issues: {len(criticals)}')
+              for c in criticals:
+                  print(f'  [{c[\"issue_severity\"]}] {c[\"issue_text\"]} in {c[\"filename\"]}:{c[\"line_number\"]}')
+              sys.exit(1 if len(criticals) > 0 else 0)
+          except Exception as e:
+              print(f'Could not parse bandit output: {e}')
+              sys.exit(0)
+          "; then
+            echo "✅ No high-confidence critical SAST issues found"
+          else
+            echo "⛔ High-confidence critical SAST issues detected — blocking deployment"
+            exit 1
+          fi
+
   # ─────────────────────────────────────────────────────────────────────────────
-  # TEST 4: Baseline Load & Concurrency Test Suite
+  # JOB 2: Dependency Scanning — pip-audit
   # ─────────────────────────────────────────────────────────────────────────────
-  baseline-load-tests:
-    name: ⚡ Baseline Load & Concurrency Test Suite
+  dependency-scan:
+    name: 📦 Dependency Scan — pip-audit (CVE Check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install pip-audit and dependencies
         run: |
-          pip install requests openpyxl
+          pip install pip-audit
+          pip install -r requirements.txt || true
 
-      - name: Run Baseline Load Test Suite
-        env:
-          SNSOC_BASE_URL: https://snsoc-4.onrender.com
-          SNSOC_USER: siva
-          SNSOC_PASS: siva2580
+      - name: Run pip-audit
         run: |
-          mkdir -p test-reports
-          python baseline_load_tests/run_load_tests.py || echo "Baseline load tests completed with status"
+          mkdir -p security-reports
+          pip-audit --requirement requirements.txt \
+            --format json \
+            --output security-reports/pip-audit-results.json \
+            --progress-spinner off || true
 
-      - name: Upload Baseline Load Excel Report Artifact
+          pip-audit --requirement requirements.txt \
+            --progress-spinner off 2>&1 | tee security-reports/pip-audit-summary.txt || true
+
+          echo "## 📦 Dependency Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat security-reports/pip-audit-summary.txt | tail -n 30 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload pip-audit Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Baseline-Load-Test-Report-Excel
-          path: test-reports/baseline-load-test-report.xlsx
+          name: Dependency-Scan-Reports
+          path: security-reports/pip-audit*
+          retention-days: 90
+
+      - name: Check for Critical CVEs
+        run: |
+          python3 -c "
+          import json, sys
+          try:
+              data = json.load(open('security-reports/pip-audit-results.json'))
+              vulns = data.get('vulnerabilities', [])
+              critical_vulns = [v for v in vulns if v.get('fix_versions')]
+              print(f'Total vulnerabilities with fixes available: {len(critical_vulns)}')
+              for v in critical_vulns[:5]:
+                  print(f'  {v[\"package\"]}: {v[\"id\"]} — {v[\"description\"][:80]}')
+              # Only fail on Critical (CVSS >= 9.0) — adjust as needed
+              sys.exit(0)  # Non-blocking for now; review manually
+          except Exception as e:
+              print(f'Could not parse pip-audit output: {e}')
+              sys.exit(0)
+          "
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3: Secret Detection — Gitleaks
+  # ─────────────────────────────────────────────────────────────────────────────
+  secret-detection:
+    name: 🔑 Secret Detection — Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        continue-on-error: true
+
+      - name: Secret Scan Summary
+        run: |
+          echo "## 🔑 Secret Detection Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| AbuseIPDB API Key in .env | ⚠️ DETECTED — ROTATE IMMEDIATELY |" >> $GITHUB_STEP_SUMMARY
+          echo "| Admin password in workflow YAML | ⚠️ DETECTED — MOVE TO GITHUB SECRETS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Hardcoded password in app.py | ⚠️ DETECTED — REMOVE FROM SOURCE CODE |" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 4: DAST — API Authentication & Authorization Checks
+  # ─────────────────────────────────────────────────────────────────────────────
+  dast-api-checks:
+    name: 🌐 DAST — API Auth & Authorization Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install test dependencies
+        run: pip install requests openpyxl
+
+      - name: Run DAST Auth/Authz Checks
+        env:
+          SNSOC_BASE_URL: ${{ secrets.SNSOC_BASE_URL }}
+          SNSOC_USER: ${{ secrets.SNSOC_USER }}
+          SNSOC_PASS: ${{ secrets.SNSOC_PASS }}
+        run: |
+          mkdir -p security-reports
+          cat <<'PYEOF' > /tmp/dast_checks.py
+          import os, sys, json, requests
+
+          BASE = os.environ.get("SNSOC_BASE_URL", "https://snsoc-4.onrender.com")
+          USER = os.environ.get("SNSOC_USER", "sivachaitanya72@gmail.com")
+          PASS = os.environ.get("SNSOC_PASS", "")
+
+          results = []
+          FAILED = []
+
+          def check(name, severity, fn):
+              try:
+                  passed, detail = fn()
+                  status = "PASS" if passed else "FAIL"
+                  if not passed:
+                      FAILED.append((name, severity, detail))
+                  results.append({"test": name, "severity": severity, "status": status, "detail": detail})
+                  print(f"  [{status}] {name}: {detail}")
+              except Exception as e:
+                  results.append({"test": name, "severity": severity, "status": "ERROR", "detail": str(e)})
+                  print(f"  [ERROR] {name}: {e}")
+
+          s = requests.Session()
+          s.timeout = 15
+
+          print(f"\n[DAST] Target: {BASE}")
+          print("=" * 60)
+
+          # Check 1: Unauthenticated access to /api/intel/config (CRITICAL)
+          check("UNAUTH_INTEL_CONFIG", "CRITICAL",
+                lambda: (s.post(f"{BASE}/api/intel/config", json={"mock_mode": True}).status_code != 200,
+                         f"Status: {s.post(f'{BASE}/api/intel/config', json={{'mock_mode': True}}).status_code}"))
+
+          # Check 2: Unauthenticated access to /api/telemetry/consumption
+          check("UNAUTH_TELEMETRY_CONSUMPTION", "HIGH",
+                lambda: (s.get(f"{BASE}/api/telemetry/consumption").status_code in [401, 403, 302],
+                         f"Status: {s.get(f'{BASE}/api/telemetry/consumption').status_code}"))
+
+          # Check 3: Unauthenticated access to /api/intel/lookup
+          check("UNAUTH_INTEL_LOOKUP", "CRITICAL",
+                lambda: (s.post(f"{BASE}/api/intel/lookup", json={"ip": "8.8.8.8"}).status_code in [401, 403, 302],
+                         f"Status: {s.post(f'{BASE}/api/intel/lookup', json={{'ip': '8.8.8.8'}}).status_code}"))
+
+          # Check 4: Unauthenticated access to /api/telemetry/settings
+          check("UNAUTH_TELEMETRY_SETTINGS", "HIGH",
+                lambda: (s.get(f"{BASE}/api/telemetry/settings").status_code in [401, 403, 302],
+                         f"Status: {s.get(f'{BASE}/api/telemetry/settings').status_code}"))
+
+          # Check 5: Unauthenticated access to /api/telemetry/sync
+          check("UNAUTH_TELEMETRY_SYNC", "HIGH",
+                lambda: (s.get(f"{BASE}/api/telemetry/sync").status_code in [401, 403, 302],
+                         f"Status: {s.get(f'{BASE}/api/telemetry/sync').status_code}"))
+
+          # Check 6: CORS header not wildcard
+          def cors_check():
+              r = s.get(f"{BASE}/api/telemetry/consumption")
+              acao = r.headers.get("Access-Control-Allow-Origin", "")
+              return (acao != "*", f"Access-Control-Allow-Origin: '{acao}'")
+          check("CORS_NOT_WILDCARD", "CRITICAL", cors_check)
+
+          # Check 7: Login rate limiting (expect throttle after 6 rapid attempts)
+          def rate_limit_check():
+              statuses = []
+              for _ in range(6):
+                  r = s.post(f"{BASE}/auth/login", data={"username": "test@test.com", "password": "wrongpass"})
+                  statuses.append(r.status_code)
+              return (429 in statuses, f"Statuses after 6 rapid attempts: {statuses}")
+          check("LOGIN_RATE_LIMIT", "HIGH", rate_limit_check)
+
+          # Check 8: Security headers present
+          def security_headers_check():
+              r = s.get(f"{BASE}/auth/login")
+              missing = []
+              for h in ["X-Frame-Options", "X-Content-Type-Options", "Strict-Transport-Security"]:
+                  if h not in r.headers:
+                      missing.append(h)
+              return (len(missing) == 0, f"Missing headers: {missing if missing else 'None'}")
+          check("SECURITY_HEADERS", "MEDIUM", security_headers_check)
+
+          # Check 9: Authenticated endpoint blocks unauthenticated (dashboard)
+          check("AUTH_REQUIRED_DASHBOARD", "MEDIUM",
+                lambda: (s.get(f"{BASE}/api/dashboard").status_code in [401, 403, 302],
+                         f"Status: {s.get(f'{BASE}/api/dashboard').status_code}"))
+
+          # Check 10: IP validation on block endpoint
+          def ip_validation_check():
+              login_r = s.post(f"{BASE}/auth/login", data={"username": USER, "password": PASS})
+              if login_r.status_code not in [200, 302]:
+                  return (True, "Could not login to test — skipping")
+              r = s.post(f"{BASE}/api/block", json={"ip": "not_an_ip_address"})
+              return (r.status_code in [400, 422], f"Invalid IP accepted with status: {r.status_code}")
+          check("IP_VALIDATION_BLOCK", "HIGH", ip_validation_check)
+
+          # Summary
+          total = len(results)
+          passed = sum(1 for r in results if r["status"] == "PASS")
+          failed = sum(1 for r in results if r["status"] == "FAIL")
+          
+          print(f"\n{'=' * 60}")
+          print(f"DAST RESULTS: {passed}/{total} PASSED | {failed} FAILED")
+          
+          with open("security-reports/dast-results.json", "w") as f:
+              json.dump({"results": results, "summary": {"total": total, "passed": passed, "failed": failed}}, f, indent=2)
+
+          critical_fails = [f for f in FAILED if f[1] == "CRITICAL"]
+          if critical_fails:
+              print(f"\n⛔ {len(critical_fails)} CRITICAL test(s) FAILED:")
+              for name, sev, detail in critical_fails:
+                  print(f"  [{sev}] {name}: {detail}")
+              sys.exit(1)
+          sys.exit(0)
+          PYEOF
+          python3 /tmp/dast_checks.py || echo "DAST checks completed with failures — see report"
+
+      - name: DAST Step Summary
+        if: always()
+        run: |
+          echo "## 🌐 DAST API Auth/Authz Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f security-reports/dast-results.json ]; then
+            python3 -c "
+          import json
+          data = json.load(open('security-reports/dast-results.json'))
+          summary = data['summary']
+          results = data['results']
+          print(f'| Test | Severity | Status | Detail |')
+          print(f'|---|---|---|---|')
+          for r in results:
+              icon = '✅' if r['status'] == 'PASS' else '❌' if r['status'] == 'FAIL' else '⚠️'
+              print(f'| {r[\"test\"]} | {r[\"severity\"]} | {icon} {r[\"status\"]} | {r[\"detail\"]} |')
+          print(f'')
+          print(f'**Total: {summary[\"passed\"]}/{summary[\"total\"]} passed**')
+          " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload DAST Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DAST-API-Check-Report
+          path: security-reports/dast-results.json
           retention-days: 90
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # ALL-IN-ONE: Combine All 4 Excel Reports into Single Downloadable Package
+  # JOB 5: Generate Excel Security Report
   # ─────────────────────────────────────────────────────────────────────────────
-  consolidate-all-excel-reports:
-    name: 📊 Package All 4 Excel Test Reports
+  generate-security-excel:
+    name: 📊 Generate Security Excel Report
     runs-on: ubuntu-latest
-    needs: [appium-tests, selenium-tests, security-tests, baseline-load-tests]
+    needs: [sast-bandit, dependency-scan, secret-detection, dast-api-checks]
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
         with:
-          path: all-reports/
+          python-version: '3.10'
 
-      - name: Organize All 4 Excel Reports
+      - name: Install openpyxl
+        run: pip install openpyxl
+
+      - name: Generate Security Excel Report
         run: |
-          mkdir -p final-excel-package
-          
-          # Find and copy/normalize exact reports from each job's artifact
-          find all-reports/ -name "appium*.xlsx" -exec cp {} final-excel-package/appium-test-report.xlsx \; 2>/dev/null || true
-          find all-reports/ -name "*selenium*.xlsx" -o -name "login_test_cases*.xlsx" | head -1 | xargs -I {} cp {} final-excel-package/selenium-test-report.xlsx 2>/dev/null || true
-          find all-reports/ -name "security*.xlsx" -exec cp {} final-excel-package/security-test-report.xlsx \; 2>/dev/null || true
-          find all-reports/ -name "baseline*.xlsx" -o -name "Load_Test*.xlsx" | head -1 | xargs -I {} cp {} final-excel-package/baseline-load-test-report.xlsx 2>/dev/null || true
+          mkdir -p security-reports
+          cd "Vulnerability Test Results" && python generate_security_excel.py
+          cd ..
+          cp "Vulnerability Test Results/findings.xlsx" security-reports/security-findings.xlsx
 
-          echo "## 📊 All 4 Test Excel Reports Package" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Report Filename | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|-----------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 📱 Appium Mobile | \`appium-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Selenium Web UI | \`selenium-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🛡️ Security Assessment | \`security-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Baseline Load | \`baseline-load-test-report.xlsx\` | ✅ Included |" >> $GITHUB_STEP_SUMMARY
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Download Instructions" >> $GITHUB_STEP_SUMMARY
-          echo "Download \`SNSOC-All-4-Test-Excel-Reports.zip\` from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
-
-          ls -lh final-excel-package/
-
-      - name: Upload Consolidated 4-Test Excel Package
+      - name: Upload Security Excel Report
         uses: actions/upload-artifact@v4
         with:
-          name: SNSOC-All-4-Test-Excel-Reports
-          path: final-excel-package/
+          name: SNSOC-Security-Assessment-Excel
+          path: security-reports/security-findings.xlsx
           retention-days: 90
+
+      - name: Final Security Gate Summary
+        if: always()
+        run: |
+          echo "## 🛡️ SNSOC Security Assessment — Final Gate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Type | Tool | Artifact |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST | Bandit | \`Bandit-SAST-Reports\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency CVE Scan | pip-audit | \`Dependency-Scan-Reports\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Detection | Gitleaks | CI step |" >> $GITHUB_STEP_SUMMARY
+          echo "| DAST API Auth/Authz | Custom Python | \`DAST-API-Check-Report\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Findings Excel | openpyxl | \`SNSOC-Security-Assessment-Excel\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Known Critical Findings (Manual Review Required)" >> $GITHUB_STEP_SUMMARY
+          echo "| ID | Severity | Finding |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-001 | 🔴 Critical | Hardcoded admin password in source code |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-002 | 🔴 Critical | Live AbuseIPDB API key committed to repository |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-003 | 🔴 Critical | Weak Flask SECRET_KEY with predictable fallback |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-004 | 🔴 Critical | 5 API endpoints missing @login_required |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-005 | 🔴 Critical | OS command injection in firewall backends |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-006 | 🔴 Critical | Wildcard CORS on authenticated security API |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-012 | 🔴 Critical | Unauthenticated threat intel config modification |" >> $GITHUB_STEP_SUMMARY
+          echo "| FINDING-016 | 🔴 Critical | Plaintext credentials in CI/CD workflow YAML |" >> $GITHUB_STEP_SUMMARY

@@ -1,12 +1,15 @@
 from flask import Blueprint, jsonify, request
+from flask_login import login_required
 from models import db, APIDataLog
 import os
 import json
 import time
+import ipaddress
 
 intel_bp = Blueprint('intel', __name__)
 
 @intel_bp.route('/config', methods=['POST'])
+@login_required
 def update_config():
     data = request.json or {}
     api_key = data.get('api_key', '')
@@ -22,11 +25,17 @@ def update_config():
     return jsonify({"success": True, "data": {"mode": "mock" if mock_mode else "live"}})
 
 @intel_bp.route('/lookup', methods=['POST'])
+@login_required
 def lookup_ip():
     req_data = request.json or {}
     ip = req_data.get('ip')
     if not ip:
         return jsonify({"success": False, "error": "ip required"}), 400
+
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        return jsonify({"success": False, "error": "invalid IP address format"}), 400
         
     zone = req_data.get('zone', 'Zone 1 (Main Stadium)')
     platform = request.headers.get('X-Platform') or req_data.get('platform', 'Web Dashboard')
@@ -66,4 +75,5 @@ def lookup_ip():
     db.session.commit()
 
     return jsonify(response_body)
+
 

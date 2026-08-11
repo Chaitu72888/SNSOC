@@ -29,11 +29,29 @@ def load_user(user_id):
     return Operator.query.get(int(user_id))
 
 @app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+def add_security_headers(response):
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        'https://snsoc-4.onrender.com',
+        'http://127.0.0.1:5000',
+        'http://localhost:5000'
+    ]
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        response.headers['Access-Control-Allow-Origin'] = 'https://snsoc-4.onrender.com'
+
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Platform'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    
+    # Security Response Headers
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
     return response
+
 
 def seed_db():
     if not Operator.query.first():

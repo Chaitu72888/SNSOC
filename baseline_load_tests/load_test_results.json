@@ -1,0 +1,142 @@
+{
+  "timestamp": "2026-08-11 10:25:54",
+  "target_url": "https://snsoc-4.onrender.com",
+  "concurrent_users": 100,
+  "duration_seconds": 75.53,
+  "total_requests": 200,
+  "successful_requests": 0,
+  "failed_requests": 200,
+  "success_rate_pct": 0.0,
+  "overall_rps": 2.65,
+  "latency_ms": {
+    "min": 15506.68,
+    "avg": 19791.51,
+    "p50": 19505.38,
+    "p90": 21976.46,
+    "p95": 23032.84,
+    "p99": 27575.19,
+    "max": 28065.66
+  },
+  "endpoint_breakdown": {
+    "Home Page": {
+      "path": "/",
+      "method": "GET",
+      "total_requests": 20,
+      "successful_requests": 0,
+      "failed_requests": 20,
+      "rps": 0.26,
+      "avg_ms": 20311.11,
+      "min_ms": 17322.06,
+      "max_ms": 27575.19,
+      "p95_ms": 27575.19
+    },
+    "Login Form": {
+      "path": "/auth/login",
+      "method": "GET",
+      "total_requests": 7,
+      "successful_requests": 0,
+      "failed_requests": 7,
+      "rps": 0.09,
+      "avg_ms": 19643.11,
+      "min_ms": 17263.84,
+      "max_ms": 21865.35,
+      "p95_ms": 21865.35
+    },
+    "Dashboard Metrics": {
+      "path": "/api/dashboard",
+      "method": "GET",
+      "total_requests": 46,
+      "successful_requests": 0,
+      "failed_requests": 46,
+      "rps": 0.61,
+      "avg_ms": 20060.04,
+      "min_ms": 17223.44,
+      "max_ms": 28065.66,
+      "p95_ms": 25224.79
+    },
+    "Recent Alerts": {
+      "path": "/api/alerts?limit=20",
+      "method": "GET",
+      "total_requests": 36,
+      "successful_requests": 0,
+      "failed_requests": 36,
+      "rps": 0.48,
+      "avg_ms": 19930.29,
+      "min_ms": 15506.68,
+      "max_ms": 24619.15,
+      "p95_ms": 22983.13
+    },
+    "Live Packets Feed": {
+      "path": "/api/packets?limit=50",
+      "method": "GET",
+      "total_requests": 33,
+      "successful_requests": 0,
+      "failed_requests": 33,
+      "rps": 0.44,
+      "avg_ms": 19302.73,
+      "min_ms": 15761.42,
+      "max_ms": 27073.86,
+      "p95_ms": 22204.04
+    },
+    "Blocked IPs List": {
+      "path": "/api/block",
+      "method": "GET",
+      "total_requests": 8,
+      "successful_requests": 0,
+      "failed_requests": 8,
+      "rps": 0.11,
+      "avg_ms": 19598.74,
+      "min_ms": 18146.27,
+      "max_ms": 21808.41,
+      "p95_ms": 21808.41
+    },
+    "IDS Rules & Thresholds": {
+      "path": "/api/ids/rules",
+      "method": "GET",
+      "total_requests": 7,
+      "successful_requests": 0,
+      "failed_requests": 7,
+      "rps": 0.09,
+      "avg_ms": 19922.42,
+      "min_ms": 19001.03,
+      "max_ms": 21004.57,
+      "p95_ms": 21004.57
+    },
+    "Intel IP Lookup (Public)": {
+      "path": "/api/intel/lookup",
+      "method": "POST",
+      "total_requests": 23,
+      "successful_requests": 0,
+      "failed_requests": 23,
+      "rps": 0.3,
+      "avg_ms": 19891.62,
+      "min_ms": 17321.65,
+      "max_ms": 25071.64,
+      "p95_ms": 22408.89
+    },
+    "Telemetry Consumption": {
+      "path": "/api/telemetry/consumption",
+      "method": "GET",
+      "total_requests": 7,
+      "successful_requests": 0,
+      "failed_requests": 7,
+      "rps": 0.09,
+      "avg_ms": 19000.92,
+      "min_ms": 16747.44,
+      "max_ms": 23048.04,
+      "p95_ms": 23048.04
+    },
+    "Telemetry Settings": {
+      "path": "/api/telemetry/settings",
+      "method": "GET",
+      "total_requests": 13,
+      "successful_requests": 0,
+      "failed_requests": 13,
+      "rps": 0.17,
+      "avg_ms": 19275.1,
+      "min_ms": 16585.28,
+      "max_ms": 21570.28,
+      "p95_ms": 21570.28
+    }
+  }
+}
