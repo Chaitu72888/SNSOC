@@ -97,7 +97,11 @@
                 <div class="alerts-list" id="incidents_body">
                     <!-- Populated by JS -->
                 </div>
-                <button class="styled-btn full-width" style="margin-top: 16px; background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color);" onclick="loadMoreAlerts()">Load More</button>
+                <div style="display: flex; gap: 12px; margin-top: 16px;" id="alerts_pagination_controls">
+                    <button id="load_more_btn" class="styled-btn full-width" style="background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color);" onclick="loadMoreAlerts()">View More</button>
+                    <button id="show_less_btn" class="styled-btn full-width" style="display: none; background-color: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border-color);" onclick="showLessAlerts()">Show Less</button>
+                </div>
+
             </div>
             
             <!-- Source IPs -->

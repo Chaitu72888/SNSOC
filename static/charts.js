@@ -266,7 +266,7 @@ async function updateDashboardStats() {
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
 let currentPage = 1;
-const alertsPerPage = 20;
+const alertsPerPage = 10;
 
 async function updateAlerts(append = false) {
     try {
@@ -300,6 +300,28 @@ async function updateAlerts(append = false) {
         } else if (!append) {
             incidentsBody.innerHTML = '<div style="color:var(--text-muted); padding: 12px;">No recent incidents.</div>';
         }
+
+        // Handle View More and Show Less button states
+        const loadMoreBtn = document.getElementById('load_more_btn');
+        const showLessBtn = document.getElementById('show_less_btn');
+
+        if (loadMoreBtn && showLessBtn) {
+            // Show Less button appears when expanded (currentPage > 1)
+            if (currentPage > 1) {
+                showLessBtn.style.display = 'block';
+            } else {
+                showLessBtn.style.display = 'none';
+            }
+
+            // Hide View More button if all alerts are loaded
+            const loadedCount = currentPage * alertsPerPage;
+            if (loadedCount >= total || alerts.length < alertsPerPage) {
+                loadMoreBtn.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'block';
+                loadMoreBtn.textContent = 'View More';
+            }
+        }
     } catch (error) {
         console.error('updateAlerts error:', error);
     }
@@ -309,6 +331,12 @@ function loadMoreAlerts() {
     currentPage++;
     updateAlerts(true);
 }
+
+function showLessAlerts() {
+    currentPage = 1;
+    updateAlerts(false);
+}
+
 
 // ─── Packet Stream (HTTP fallback when socket is unavailable) ─────────────────
 async function updatePackets() {
