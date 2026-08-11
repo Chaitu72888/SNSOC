@@ -26,7 +26,8 @@ socketio.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Operator.query.get(int(user_id))
+    return db.session.get(Operator, int(user_id))
+
 
 @app.after_request
 def add_security_headers(response):
