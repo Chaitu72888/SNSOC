@@ -18,12 +18,6 @@ import bcrypt
 app = Flask(__name__)
 app.config.from_object(Config)
 
-@app.context_processor
-def inject_globals():
-    return {
-        'google_client_id': os.environ.get('GOOGLE_CLIENT_ID', '') or app.config.get('GOOGLE_CLIENT_ID', '')
-    }
-
 
 db.init_app(app)
 

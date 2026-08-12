@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5.0">
     <script type="module" src="{{ url_for('static', filename='firebase-init.js') }}"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             display: flex;
@@ -287,22 +286,6 @@
                 <span id="btnSpinner" class="spinner" style="display:none;"></span>
             </button>
         </form>
-        <div class="divider">
-            <span>or</span>
-        </div>
-
-        <!-- Google Auth Container -->
-        <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-bottom: 8px;"></div>
-
-        <button type="button" id="customGoogleBtn" class="google-btn" onclick="triggerGoogleAuth()">
-            <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.24v3.15C3.26 21.36 7.37 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.24C.45 8.18 0 10.03 0 12s.45 3.82 1.24 5.39l4.04-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.26 2.64 1.24 6.61l4.04 3.15c.95-2.85 3.6-4.96 6.72-4.96z"/>
-            </svg>
-            Continue with Google
-        </button>
 
         <div class="footer-link">
             Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a>
@@ -311,118 +294,9 @@
 
     <script>
         const EMAIL_REGEX = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-        const GOOGLE_CLIENT_ID = "{{ google_client_id }}";
-        let tokenClient = null;
 
         function showBanner(msg, type = 'error') {
             document.getElementById('banner-container').innerHTML = `<div class="alert-box alert-${type}">${msg}</div>`;
-        }
-
-        function initGoogleSDK() {
-            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('your_google_client_id')) {
-                console.warn('[Google Auth] GOOGLE_CLIENT_ID is not configured in .env');
-                return;
-            }
-
-            if (typeof google !== 'undefined' && google.accounts) {
-                if (google.accounts.id) {
-                    google.accounts.id.initialize({
-                        client_id: GOOGLE_CLIENT_ID,
-                        callback: handleGoogleCredentialResponse,
-                        auto_select: false
-                    });
-
-                    const btnContainer = document.getElementById('googleBtnContainer');
-                    if (btnContainer) {
-                        google.accounts.id.renderButton(btnContainer, {
-                            theme: 'dark',
-                            size: 'large',
-                            type: 'standard',
-                            shape: 'rectangular',
-                            text: 'signup_with',
-                            width: 340
-                        });
-                        const customBtn = document.getElementById('customGoogleBtn');
-                        if (customBtn) customBtn.style.display = 'none';
-                    }
-                }
-
-                if (google.accounts.oauth2) {
-                    tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: GOOGLE_CLIENT_ID,
-                        scope: 'openid email profile',
-                        callback: async (tokenResponse) => {
-                            if (tokenResponse && tokenResponse.access_token) {
-                                await handleGoogleAccessTokenResponse(tokenResponse.access_token);
-                            } else {
-                                showBanner('Google sign-up was cancelled or failed.', 'error');
-                            }
-                        }
-                    });
-                }
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            initGoogleSDK();
-            setTimeout(initGoogleSDK, 1000);
-        });
-
-        function triggerGoogleAuth() {
-            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('your_google_client_id')) {
-                showBanner('Google OAuth is not configured. Please set GOOGLE_CLIENT_ID in your .env file.', 'error');
-                return;
-            }
-
-            if (tokenClient) {
-                tokenClient.requestAccessToken();
-            } else if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-                google.accounts.id.prompt((notification) => {
-                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        console.warn('[Google Auth] Prompt not displayed:', notification.getNotDisplayedReason());
-                    }
-                });
-            } else {
-                showBanner('Google Authentication SDK is initializing... Please wait or refresh.', 'error');
-            }
-        }
-
-        async function handleGoogleCredentialResponse(response) {
-            try {
-                showBanner('Verifying Google credentials...', 'success');
-                const res = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ credential: response.credential })
-                });
-                const data = await res.json();
-                if (res.ok && data.status === 'success') {
-                    window.location.href = data.redirect || '/';
-                } else {
-                    showBanner(data.error || 'Google authentication failed', 'error');
-                }
-            } catch (err) {
-                showBanner('Google sign-up failed. Please try again.', 'error');
-            }
-        }
-
-        async function handleGoogleAccessTokenResponse(accessToken) {
-            try {
-                showBanner('Authenticating via Google Token...', 'success');
-                const res = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token: accessToken })
-                });
-                const data = await res.json();
-                if (res.ok && data.status === 'success') {
-                    window.location.href = data.redirect || '/';
-                } else {
-                    showBanner(data.error || 'Google authentication failed', 'error');
-                }
-            } catch (err) {
-                showBanner('Google sign-up failed. Please try again.', 'error');
-            }
         }
 
         function checkStrength() {

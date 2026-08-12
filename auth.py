@@ -322,72 +322,7 @@ def reset_password(token):
 
 
 
-# ─── 4. GOOGLE OAUTH ─────────────────────────────────────────────────────────
-@auth_bp.route('/api/auth/google', methods=['POST'])
-@auth_bp.route('/auth/google', methods=['POST'])
-def google_auth():
-    data = request.get_json(silent=True) or request.form
-    credential = data.get('credential') or data.get('id_token')
-    access_token = data.get('access_token')
-    
-    if not credential and not access_token:
-        print("[Google OAuth Error] Neither credential ID token nor access_token was provided.")
-        return jsonify({"status": "error", "error": "Missing Google credential or access token"}), 400
-
-    token_data = {}
-    try:
-        if credential:
-            # 1. Verify Google ID token via Google tokeninfo API endpoint
-            google_verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
-            req = urllib.request.Request(google_verify_url)
-            with urllib.request.urlopen(req) as resp:
-                token_data = json.loads(resp.read().decode('utf-8'))
-        elif access_token:
-            # 2. Verify Google OAuth2 Access token via Google userinfo API endpoint
-            userinfo_url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={access_token}"
-            req = urllib.request.Request(userinfo_url)
-            with urllib.request.urlopen(req) as resp:
-                token_data = json.loads(resp.read().decode('utf-8'))
-
-        email = (token_data.get('email') or '').lower().strip()
-        google_id = token_data.get('sub')
-        full_name = token_data.get('name') or email.split('@')[0] if email else 'Google User'
-
-        print(f"[Google OAuth] Verified token for email: {email}, google_id: {google_id}")
-
-        if not email:
-            return jsonify({"status": "error", "error": "Unable to verify email address from Google account"}), 400
-
-        operator = Operator.query.filter_by(name=email).first()
-        if not operator:
-            # Create new operator for Google user
-            operator = Operator(name=email, full_name=full_name, google_id=google_id)
-            db.session.add(operator)
-            db.session.commit()
-            print(f"[Google OAuth] Created new Operator record for {email}")
-        else:
-            if not operator.google_id:
-                operator.google_id = google_id
-            if full_name and not operator.full_name:
-                operator.full_name = full_name
-            db.session.commit()
-
-        login_user(operator)
-        active_sessions[operator.id] = {'username': operator.name, 'last_seen': time.time()}
-        emit_auth_event('google_login', operator.name)
-
-        return jsonify({"status": "success", "user": operator.name, "redirect": url_for('dashboard')})
-    except urllib.error.HTTPError as he:
-        err_body = he.read().decode('utf-8') if hasattr(he, 'read') else str(he)
-        print(f"[Google OAuth Verification HTTP Error] Code: {he.code}, Body: {err_body}")
-        return jsonify({"status": "error", "error": f"Google token verification failed ({he.code}): {err_body}"}), 400
-    except Exception as e:
-        print(f"[Google OAuth Error] Exception: {e}")
-        return jsonify({"status": "error", "error": f"Google authentication failed: {str(e)}"}), 400
-
-
-
-# ─── 5. LOGOUT ────────────────────────────────────────────────────────────────
+# ─── 4. LOGOUT ────────────────────────────────────────────────────────────────
 @auth_bp.route('/auth/logout', methods=['GET', 'POST'])
 @auth_bp.route('/api/auth/logout', methods=['GET', 'POST'])
 @login_required
