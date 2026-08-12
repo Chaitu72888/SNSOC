@@ -27,3 +27,8 @@ app/build/
 # Databases & local configs
 *.db
 *.sqlite3
+
+# Capacitor build outputs
+capacitor_app/node_modules/
+capacitor_app/android/
+

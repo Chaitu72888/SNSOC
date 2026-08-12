@@ -1,0 +1,10 @@
+{
+  "appId": "com.snsoc.live",
+  "appName": "SNSOC Live",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://snsoc-4.onrender.com",
+    "cleartext": true
+  }
+}
