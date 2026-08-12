@@ -169,6 +169,79 @@ def signup():
     return redirect(url_for('dashboard'))
 
 
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_reset_email(to_email, reset_url):
+    """Sends passcode reset link to user email via SMTP or Resend API if configured."""
+    resend_key = current_app.config.get('RESEND_API_KEY') or os.environ.get('RESEND_API_KEY', '')
+    smtp_user = current_app.config.get('SMTP_USERNAME') or os.environ.get('SMTP_USERNAME', '')
+    smtp_pass = current_app.config.get('SMTP_PASSWORD') or os.environ.get('SMTP_PASSWORD', '')
+
+    subject = "SNSOC.live - Passcode Reset Request"
+    body_text = f"Hello,\n\nYou requested a passcode reset for your SNSOC.live account.\nClick the link below to reset your passcode:\n{reset_url}\n\nThis link will expire in 1 hour.\nIf you did not request this, please ignore this email."
+    body_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #1e293b; background-color: #0f172a; color: #f8fafc; border-radius: 8px;">
+        <h2 style="color: #3b82f6; margin-top: 0;">SNSOC.live Passcode Reset</h2>
+        <p>Hello,</p>
+        <p>You requested a passcode reset for your SNSOC.live account. Click the button below to reset your passcode:</p>
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="{reset_url}" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Passcode</a>
+        </div>
+        <p style="font-size: 0.85rem; color: #94a3b8;">This link will expire in 1 hour. If you did not request a passcode reset, no action is required.</p>
+    </div>
+    """
+
+    # 1. Try Resend API if key is set
+    if resend_key:
+        try:
+            import requests
+            resp = requests.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+                json={
+                    "from": "SNSOC Security <noreply@snsoc.live>",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html,
+                    "text": body_text
+                },
+                timeout=10
+            )
+            if resp.status_code in (200, 201):
+                print(f"[AUTH EMAIL] Reset email successfully sent to {to_email} via Resend API")
+                return True
+        except Exception as e:
+            print(f"[AUTH EMAIL ERROR] Failed to send via Resend API: {e}")
+
+    # 2. Try SMTP if credentials are set
+    if smtp_user and smtp_pass:
+        try:
+            smtp_server = current_app.config.get('SMTP_SERVER', 'smtp.gmail.com')
+            smtp_port = current_app.config.get('SMTP_PORT', 587)
+            sender = current_app.config.get('SMTP_SENDER', smtp_user)
+
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = sender
+            msg['To'] = to_email
+            msg.attach(MIMEText(body_text, 'plain'))
+            msg.attach(MIMEText(body_html, 'html'))
+
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(sender, [to_email], msg.as_string())
+            print(f"[AUTH EMAIL] Reset email successfully sent to {to_email} via SMTP ({smtp_server})")
+            return True
+        except Exception as e:
+            print(f"[AUTH EMAIL ERROR] Failed to send via SMTP: {e}")
+
+    print(f"[AUTH EMAIL NOTE] No email credentials configured (SMTP_USERNAME / RESEND_API_KEY). Reset link generated securely.")
+    return False
+
+
 # ─── 3. FORGOT PASSWORD & RESET PASSWORD ─────────────────────────────────────
 @auth_bp.route('/auth/forgot-password', methods=['GET', 'POST'])
 @auth_bp.route('/api/auth/forgot-password', methods=['GET', 'POST'])
@@ -192,14 +265,9 @@ def forgot_password():
         db.session.commit()
 
         reset_url = url_for('auth.reset_password', token=token, _external=True)
-        print(f"[AUTH] Reset password requested for {username}. Reset Link: {reset_url}")
+        send_reset_email(username, reset_url)
 
-        msg = f"Reset link generated successfully. Reset URL: {reset_url}"
-        if request.is_json:
-            return jsonify({"status": "success", "message": "Passcode reset link sent!", "reset_link": reset_url})
-        return render_template('forgot_password.html', success="Passcode reset link sent! Check server log / link below.", reset_link=reset_url)
-
-    # Security practice: don't disclose whether email exists
+    # Security practice: don't disclose whether email exists & never return token/link
     msg = "If an account exists with that email, a passcode reset link has been sent."
     if request.is_json: return jsonify({"status": "success", "message": msg})
     return render_template('forgot_password.html', success=msg)
