@@ -2,5 +2,13 @@
   "appId": "com.snsoc.live",
   "appName": "SNSOC Live",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://snsoc-4.onrender.com/auth/login",
+    "cleartext": true,
+    "allowNavigation": [
+      "snsoc-4.onrender.com",
+      "*.onrender.com"
+    ]
+  }
 }
