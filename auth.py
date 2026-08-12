@@ -197,11 +197,12 @@ def send_reset_email(to_email, reset_url):
     if resend_key:
         try:
             import requests
+            from_address = os.environ.get('RESEND_FROM_EMAIL', 'onboarding@resend.dev')
             resp = requests.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
                 json={
-                    "from": "SNSOC Security <noreply@snsoc.live>",
+                    "from": f"SNSOC Security <{from_address}>",
                     "to": [to_email],
                     "subject": subject,
                     "html": body_html,
