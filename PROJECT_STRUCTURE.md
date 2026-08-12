@@ -9,17 +9,17 @@ This document provides a clean, comprehensive overview of the repository directo
 ```text
 SOC_Project/
 ├── app.py                      # Flask Application Entrypoint & Startup
-├── auth.py                     # Authentication Controller & Email Dispatch
-├── config.py                   # Application Environment Configuration
-├── extensions.py               # SocketIO & Rate Limiter Extensions
-├── models.py                   # SQLAlchemy Database Schemas
 ├── render.yaml                 # Render Cloud Deployment Specification
 ├── requirements.txt            # Python Dependencies
 ├── snsoc.db                    # SQLite Local Database File
 ├── PROJECT_STRUCTURE.md        # Architecture & Folder Guide
 │
-├── backend/                    # Core Python Backend Packages
-│   ├── api/                    # REST API Blueprint Handlers
+├── backend/                    # Core Python Backend Modules
+│   ├── auth.py                 # Authentication Controller & Email Dispatch
+│   ├── config.py               # Environment Configuration Loader
+│   ├── extensions.py           # SocketIO & Rate Limiter Extensions
+│   ├── models.py               # SQLAlchemy Database Schemas
+│   ├── api/                    # REST API Blueprint Handlers (dashboard, ids, intel, block, telemetry)
 │   ├── engine/                 # Traffic Capture & Threat Scorer Engine
 │   └── firewall/               # OS Firewall Adapters (Netsh/IPtables/None)
 │
@@ -44,11 +44,11 @@ SOC_Project/
 
 The backend is built with Python 3, Flask 3, Flask-SocketIO (Eventlet), and SQLAlchemy.
 
-* **[app.py](file:///d:/SNSOC/SOC_Project/app.py)**: Application factory, blueprint registrations, database migrations (`migrate_db`), initial seeding (`seed_db`), security headers, and background thread activation.
-* **[auth.py](file:///d:/SNSOC/SOC_Project/auth.py)**: User authentication handling (`/auth/login`, `/auth/signup`, `/auth/logout`, `/auth/forgot-password`, `/auth/reset-password`). Includes secure `send_reset_email` helper using **SMTP** and **Resend API**.
-* **[config.py](file:///d:/SNSOC/SOC_Project/config.py)**: Environment configuration loader for secret keys, session lifetime, AbuseIPDB keys, and email service options.
-* **[extensions.py](file:///d:/SNSOC/SOC_Project/extensions.py)**: SocketIO (`cors_allowed_origins="*"`, `async_mode='eventlet'`) and Flask-Limiter instances.
-* **[models.py](file:///d:/SNSOC/SOC_Project/models.py)**: Database models (`Operator`, `IDSRule`, `APIDataLog`, `PlatformSync`, `DataUsageSetting`, `Alert`, `BlockedIP`).
+* **[app.py](file:///d:/SNSOC/SOC_Project/app.py)**: Server launcher, blueprint registrations, database migrations (`migrate_db`), initial seeding (`seed_db`), security headers, and background thread activation.
+* **[backend/auth.py](file:///d:/SNSOC/SOC_Project/backend/auth.py)**: User authentication handling (`/auth/login`, `/auth/signup`, `/auth/logout`, `/auth/forgot-password`, `/auth/reset-password`). Includes secure `send_reset_email` helper using **SMTP** and **Resend API**.
+* **[backend/config.py](file:///d:/SNSOC/SOC_Project/backend/config.py)**: Environment configuration loader for secret keys, session lifetime, AbuseIPDB keys, and email service options.
+* **[backend/extensions.py](file:///d:/SNSOC/SOC_Project/backend/extensions.py)**: SocketIO (`cors_allowed_origins="*"`, `async_mode='eventlet'`) and Flask-Limiter instances.
+* **[backend/models.py](file:///d:/SNSOC/SOC_Project/backend/models.py)**: Database models (`Operator`, `IDSRule`, `APIDataLog`, `PlatformSync`, `DataUsageSetting`, `Alert`, `BlockedIP`).
 
 ### 🔌 REST API Router Blueprints (`backend/api/`)
 * **[backend/api/dashboard.py](file:///d:/SNSOC/SOC_Project/backend/api/dashboard.py)**: Endpoint `/api/dashboard` returning packet statistics, threat level, top source IPs, and alert counts.
