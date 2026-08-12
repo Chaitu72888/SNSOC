@@ -210,6 +210,84 @@ socket.on('new_alert', () => {
     updateDashboardStats();
 });
 
+// ─── Real-Time Authentication & Session Listener ──────────────────────────────
+socket.on('auth_update', (data) => {
+    console.log('[Socket.IO] Real-time auth event received:', data);
+    showAuthNotification(data);
+    fetchAuthStatus();
+});
+
+function showAuthNotification(data) {
+    const alertBar = document.getElementById('live_auth_alert_bar');
+    const msgEl = document.getElementById('live_auth_alert_msg');
+    const timeEl = document.getElementById('live_auth_alert_time');
+    
+    if (alertBar && msgEl) {
+        const timeStr = data.timestamp ? new Date(data.timestamp * 1000).toLocaleTimeString() : new Date().toLocaleTimeString();
+        msgEl.textContent = data.message || `Auth event: ${data.event} (${data.user})`;
+        if (timeEl) timeEl.textContent = timeStr;
+
+        alertBar.style.display = 'flex';
+        alertBar.style.opacity = '1';
+
+        // Flash background color depending on event
+        if (data.event === 'login') {
+            alertBar.style.background = 'rgba(16, 185, 129, 0.2)';
+            alertBar.style.borderColor = '#10b981';
+        } else if (data.event === 'logout') {
+            alertBar.style.background = 'rgba(239, 68, 68, 0.2)';
+            alertBar.style.borderColor = '#ef4444';
+        }
+
+        setTimeout(() => {
+            alertBar.style.opacity = '0';
+            setTimeout(() => { alertBar.style.display = 'none'; }, 400);
+        }, 5000);
+    }
+}
+
+async function fetchAuthStatus() {
+    try {
+        const res = await fetch('/auth/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. Topbar session badge
+        const nameEl = document.getElementById('session_operator_name');
+        if (nameEl && data.username) nameEl.textContent = data.username;
+
+        const badgeEl = document.getElementById('active_sessions_badge');
+        if (badgeEl) badgeEl.textContent = `${data.active_sessions_count || 1} Session${(data.active_sessions_count || 1) > 1 ? 's' : ''}`;
+
+        // 2. Settings tab session details
+        const setOp = document.getElementById('settings_auth_operator');
+        if (setOp && data.username) setOp.textContent = data.username;
+
+        const setSess = document.getElementById('settings_auth_sessions_count');
+        if (setSess) setSess.textContent = `${data.active_sessions_count || 1} Active`;
+
+        const setAct = document.getElementById('settings_auth_last_activity');
+        if (setAct && data.last_auth_activity) {
+            const act = data.last_auth_activity;
+            const timeStr = act.timestamp ? new Date(act.timestamp * 1000).toLocaleTimeString() : 'Recent';
+            setAct.textContent = `${act.event ? act.event.toUpperCase() : 'EVENT'} by ${act.user || 'user'} at ${timeStr}`;
+        }
+    } catch (e) {
+        console.error('fetchAuthStatus error:', e);
+    }
+}
+
+async function pingKeepAlive() {
+    try {
+        // Keeps Render free-tier instance awake while browser tab is open
+        await fetch('/api/ping');
+        console.log('[Keep-Alive] Render service ping successful');
+    } catch (e) {
+        console.warn('[Keep-Alive] Ping failed:', e);
+    }
+}
+
+
 // ─── 1-Second Traffic Tick ────────────────────────────────────────────────────
 // Every second: snapshot ppsCounter → traffic chart, then reset
 setInterval(() => {
@@ -592,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCharts();
 
     // Initial data load
+    fetchAuthStatus();
     updateDashboardStats();
     updateAlerts();
     loadRules();
@@ -600,6 +679,12 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchSyncStatus();
 
     // HTTP polling intervals (backup / supplement to socket)
+    // Auth status polling fallback every 5 seconds
+    setInterval(fetchAuthStatus, 5000);
+
+    // Render keep-alive ping every 4 minutes (240s)
+    setInterval(pingKeepAlive, 240000);
+
     // updateDashboardStats every 3s for top IPs and authoritative counts
     setInterval(updateDashboardStats, 3000);
 
@@ -613,3 +698,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTelemetryUI, 15000);
     setInterval(fetchSyncStatus, 30000);
 });
+

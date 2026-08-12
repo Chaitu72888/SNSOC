@@ -1,10 +1,15 @@
 import eventlet
-eventlet.monkey_patch()
+if not eventlet.patcher.is_monkey_patched('socket'):
+    eventlet.monkey_patch()
+
 import os
 import json
 import time
-from flask import Flask, render_template, redirect, url_for, request
-from flask_socketio import SocketIO
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask import Flask, render_template, redirect, url_for, request, jsonify
+from extensions import socketio
 from flask_login import LoginManager, login_required
 from config import Config
 from models import db, Operator, IDSRule, APIDataLog, PlatformSync, DataUsageSetting
@@ -13,16 +18,30 @@ import bcrypt
 app = Flask(__name__)
 app.config.from_object(Config)
 
+@app.context_processor
+def inject_globals():
+    return {
+        'google_client_id': os.environ.get('GOOGLE_CLIENT_ID', '') or app.config.get('GOOGLE_CLIENT_ID', '')
+    }
+
+
 db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet',
-                   ping_timeout=60, ping_interval=25,
-                   logger=False, engineio_logger=False)
 socketio.init_app(app)
+
+@app.route('/api/ping', methods=['GET', 'POST', 'OPTIONS'])
+def keep_alive_ping():
+    """Keep-alive endpoint to prevent Render free-tier instance spin-down during active sessions."""
+    return jsonify({
+        "status": "active",
+        "service": "SNSOC-Backend",
+        "timestamp": time.time()
+    })
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -55,10 +74,16 @@ def add_security_headers(response):
 
 
 def seed_db():
-    if not Operator.query.first():
-        hashed = bcrypt.hashpw('siva2580'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        admin = Operator(name='sivachaitanya72@gmail.com', passcode_hash=hashed)
+    admin = Operator.query.filter_by(name='sivachaitanya72@gmail.com').first()
+    hashed = bcrypt.hashpw('siva2580'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    if not admin:
+        admin = Operator(name='sivachaitanya72@gmail.com', full_name='Siva Chaitanya', passcode_hash=hashed)
         db.session.add(admin)
+    else:
+        admin.passcode_hash = hashed
+    db.session.commit()
+
+
     
     if not IDSRule.query.filter_by(rule_type='protected_port').first():
         for port in [22, 23, 445, 3389]:
@@ -95,21 +120,42 @@ from api.intel import intel_bp
 from api.block import block_bp
 from api.telemetry import telemetry_bp
 
-app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp, url_prefix='/api')
 app.register_blueprint(ids_bp, url_prefix='/api/ids')
 app.register_blueprint(intel_bp, url_prefix='/api/intel')
 app.register_blueprint(block_bp, url_prefix='/api')
 app.register_blueprint(telemetry_bp, url_prefix='/api/telemetry')
 
+
 @app.route('/')
 @login_required
 def dashboard():
     return render_template('dashboard.html')
 
+def migrate_db():
+    try:
+        connection = db.engine.raw_connection()
+        cursor = connection.cursor()
+        cursor.execute("PRAGMA table_info(operator)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'full_name' not in columns:
+            cursor.execute("ALTER TABLE operator ADD COLUMN full_name VARCHAR(128)")
+        if 'reset_token' not in columns:
+            cursor.execute("ALTER TABLE operator ADD COLUMN reset_token VARCHAR(128)")
+        if 'reset_token_expiry' not in columns:
+            cursor.execute("ALTER TABLE operator ADD COLUMN reset_token_expiry FLOAT")
+        if 'google_id' not in columns:
+            cursor.execute("ALTER TABLE operator ADD COLUMN google_id VARCHAR(128)")
+        connection.commit()
+    except Exception as e:
+        print(f"[DB Migration Note] {e}")
+
 with app.app_context():
     db.create_all()
+    migrate_db()
     seed_db()
+
 
 # Start background tasks
 from engine.capture import start_capture_thread
@@ -119,4 +165,5 @@ start_stats_thread(app, socketio)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    socketio.run(app, host='0.0.0.0', port=port)
+

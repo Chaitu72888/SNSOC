@@ -10,8 +10,13 @@ class Config:
     ABUSEIPDB_API_KEY = os.environ.get('ABUSEIPDB_API_KEY', '')
     MOCK_TI_MODE = os.environ.get('MOCK_TI_MODE', 'true').lower() == 'true'
     
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+
     # Cookie & Session Security
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 3600
+
 

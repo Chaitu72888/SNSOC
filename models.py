@@ -5,12 +5,17 @@ import time
 
 db = SQLAlchemy()
 
-class Operator(UserMixin, db.Model):
+class Operator(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
-    passcode_hash = db.Column(db.String(128), nullable=False)
+    name = db.Column(db.String(64), unique=True, nullable=False) # Email address
+    full_name = db.Column(db.String(128), nullable=True)
+    passcode_hash = db.Column(db.String(128), nullable=True) # Nullable if registered via Google OAuth only
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    force_password_change = db.Column(db.Boolean, default=True)
+    force_password_change = db.Column(db.Boolean, default=False)
+    reset_token = db.Column(db.String(128), nullable=True)
+    reset_token_expiry = db.Column(db.Float, nullable=True)
+    google_id = db.Column(db.String(128), nullable=True)
+
 
 class Alert(db.Model):
     id = db.Column(db.Integer, primary_key=True)

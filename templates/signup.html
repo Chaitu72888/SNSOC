@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNSOC.live — Sign In</title>
+    <title>SNSOC.live — Sign Up</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5.0">
     <script type="module" src="{{ url_for('static', filename='firebase-init.js') }}"></script>
@@ -33,7 +33,7 @@
             padding: 40px;
             border-radius: 12px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
         }
 
@@ -42,7 +42,7 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
         .logo-icon {
@@ -63,40 +63,24 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             display: flex;
             flex-direction: column;
         }
 
         .form-group label {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 500;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .form-group .forgot-link {
-            font-size: 0.8rem;
-            color: var(--accent-blue);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .form-group .forgot-link:hover {
-            color: #60a5fa;
-            text-decoration: underline;
+            margin-bottom: 6px;
         }
 
         .styled-input {
             background-color: var(--bg-dark);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 12px 16px;
+            padding: 11px 14px;
             border-radius: 6px;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-family: inherit;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
@@ -113,9 +97,31 @@
 
         .field-error {
             color: #ef4444;
-            font-size: 0.8rem;
-            margin-top: 6px;
+            font-size: 0.78rem;
+            margin-top: 5px;
             display: none;
+        }
+
+        .strength-meter {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            background: #ef4444;
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        .strength-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
         }
 
         .styled-btn {
@@ -129,7 +135,7 @@
             cursor: pointer;
             width: 100%;
             transition: background-color 0.2s, opacity 0.2s;
-            margin-top: 8px;
+            margin-top: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -150,8 +156,8 @@
             align-items: center;
             text-align: center;
             color: var(--text-muted);
-            margin: 24px 0;
-            font-size: 0.82rem;
+            margin: 20px 0;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -171,9 +177,9 @@
             background-color: rgba(255, 255, 255, 0.05);
             color: var(--text-main);
             border: 1px solid var(--border-color);
-            padding: 12px;
+            padding: 11px;
             border-radius: 6px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
             width: 100%;
@@ -191,7 +197,7 @@
 
         .footer-link {
             text-align: center;
-            margin-top: 24px;
+            margin-top: 20px;
             font-size: 0.88rem;
             color: var(--text-muted);
         }
@@ -208,23 +214,17 @@
         }
 
         .alert-box {
-            padding: 12px;
+            padding: 11px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
         }
 
         .alert-error {
             background: rgba(239, 68, 68, 0.1);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .spinner {
@@ -253,40 +253,47 @@
             {% if error %}
             <div class="alert-box alert-error">{{ error }}</div>
             {% endif %}
-            {% if success %}
-            <div class="alert-box alert-success">{{ success }}</div>
-            {% endif %}
         </div>
 
-        <form id="loginForm" method="POST" action="/auth/login" onsubmit="handleLoginSubmit(event)">
+        <form id="signupForm" method="POST" action="/auth/signup" onsubmit="handleSignupSubmit(event)">
             <div class="form-group">
-                <label for="username">Operator Name</label>
-                <input type="email" id="username" name="username" class="styled-input" placeholder="operator@snsoc.live" value="sivachaitanya72@gmail.com" required autofocus>
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" class="styled-input" placeholder="e.g. Siva Chaitanya" required autofocus>
+                <div class="field-error" id="name-error">Please enter your full name.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Operator Name (Email)</label>
+                <input type="email" id="username" name="username" class="styled-input" placeholder="operator@snsoc.live" required>
                 <div class="field-error" id="email-error">Please enter a valid email address.</div>
             </div>
 
             <div class="form-group">
-                <label for="password">
-                    <span>Passcode</span>
-                    <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot Passcode?</a>
-                </label>
-                <input type="password" id="password" name="password" class="styled-input" placeholder="••••••••" value="siva2580" required>
-                <div class="field-error" id="password-error">Passcode is required.</div>
+                <label for="password">Passcode</label>
+                <input type="password" id="password" name="password" class="styled-input" placeholder="Min. 8 characters" required oninput="checkStrength()">
+                <div class="strength-meter"><div class="strength-bar" id="strengthBar"></div></div>
+                <div class="strength-text" id="strengthText">Min 8 chars, at least 1 number or symbol</div>
+                <div class="field-error" id="pass-error">Passcode must be at least 8 chars with a number/symbol.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Passcode</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="styled-input" placeholder="Re-enter passcode" required>
+                <div class="field-error" id="confirm-error">Passcodes do not match.</div>
             </div>
 
             <button type="submit" id="submitBtn" class="styled-btn">
-                <span id="btnText">Authenticate</span>
+                <span id="btnText">Create Account</span>
                 <span id="btnSpinner" class="spinner" style="display:none;"></span>
             </button>
         </form>
-
         <div class="divider">
             <span>or</span>
         </div>
 
         <!-- Google Auth Container -->
         <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-bottom: 8px;"></div>
-        
+
         <button type="button" id="customGoogleBtn" class="google-btn" onclick="triggerGoogleAuth()">
             <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
@@ -298,7 +305,7 @@
         </button>
 
         <div class="footer-link">
-            Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign Up</a>
+            Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a>
         </div>
     </div>
 
@@ -308,8 +315,7 @@
         let tokenClient = null;
 
         function showBanner(msg, type = 'error') {
-            const container = document.getElementById('banner-container');
-            container.innerHTML = `<div class="alert-box alert-${type}">${msg}</div>`;
+            document.getElementById('banner-container').innerHTML = `<div class="alert-box alert-${type}">${msg}</div>`;
         }
 
         function initGoogleSDK() {
@@ -319,7 +325,6 @@
             }
 
             if (typeof google !== 'undefined' && google.accounts) {
-                // 1. Initialize GIS ID Client (Credential ID Token flow)
                 if (google.accounts.id) {
                     google.accounts.id.initialize({
                         client_id: GOOGLE_CLIENT_ID,
@@ -327,7 +332,6 @@
                         auto_select: false
                     });
 
-                    // Render official Google button into container if present
                     const btnContainer = document.getElementById('googleBtnContainer');
                     if (btnContainer) {
                         google.accounts.id.renderButton(btnContainer, {
@@ -335,16 +339,14 @@
                             size: 'large',
                             type: 'standard',
                             shape: 'rectangular',
-                            text: 'continue_with',
+                            text: 'signup_with',
                             width: 340
                         });
-                        // Hide custom button if native button rendered
                         const customBtn = document.getElementById('customGoogleBtn');
                         if (customBtn) customBtn.style.display = 'none';
                     }
                 }
 
-                // 2. Initialize GIS OAuth2 Token Client (Popup flow for custom button)
                 if (google.accounts.oauth2) {
                     tokenClient = google.accounts.oauth2.initTokenClient({
                         client_id: GOOGLE_CLIENT_ID,
@@ -353,7 +355,7 @@
                             if (tokenResponse && tokenResponse.access_token) {
                                 await handleGoogleAccessTokenResponse(tokenResponse.access_token);
                             } else {
-                                showBanner('Google sign-in was cancelled or failed.', 'error');
+                                showBanner('Google sign-up was cancelled or failed.', 'error');
                             }
                         }
                     });
@@ -361,10 +363,8 @@
             }
         }
 
-        // Initialize Google SDK when script loads / DOM is ready
         window.addEventListener('DOMContentLoaded', () => {
             initGoogleSDK();
-            // Retry after 1s if Google GIS script was still downloading
             setTimeout(initGoogleSDK, 1000);
         });
 
@@ -402,7 +402,7 @@
                     showBanner(data.error || 'Google authentication failed', 'error');
                 }
             } catch (err) {
-                showBanner('Google sign-in failed. Please try again.', 'error');
+                showBanner('Google sign-up failed. Please try again.', 'error');
             }
         }
 
@@ -421,74 +421,122 @@
                     showBanner(data.error || 'Google authentication failed', 'error');
                 }
             } catch (err) {
-                showBanner('Google sign-in failed. Please try again.', 'error');
+                showBanner('Google sign-up failed. Please try again.', 'error');
             }
         }
 
-        async function handleLoginSubmit(e) {
+        function checkStrength() {
+            const pass = document.getElementById('password').value;
+            const bar = document.getElementById('strengthBar');
+            const text = document.getElementById('strengthText');
+            
+            let score = 0;
+            if (pass.length >= 8) score += 40;
+            if (/[0-9]/.test(pass)) score += 30;
+            if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) score += 30;
+
+            bar.style.width = score + '%';
+
+            if (score < 40) {
+                bar.style.backgroundColor = '#ef4444';
+                text.textContent = 'Weak: Min 8 chars required';
+                text.style.color = '#ef4444';
+            } else if (score < 70) {
+                bar.style.backgroundColor = '#eab308';
+                text.textContent = 'Medium: Add a number or symbol';
+                text.style.color = '#eab308';
+            } else {
+                bar.style.backgroundColor = '#10b981';
+                text.textContent = 'Strong passcode';
+                text.style.color = '#10b981';
+            }
+        }
+
+        async function handleSignupSubmit(e) {
             e.preventDefault();
 
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
+            const nameInput = document.getElementById('full_name');
+            const emailInput = document.getElementById('username');
+            const passInput = document.getElementById('password');
+            const confirmInput = document.getElementById('confirm_password');
+
+            const nameErr = document.getElementById('name-error');
             const emailErr = document.getElementById('email-error');
-            const passErr = document.getElementById('password-error');
+            const passErr = document.getElementById('pass-error');
+            const confirmErr = document.getElementById('confirm-error');
+
             const submitBtn = document.getElementById('submitBtn');
             const btnText = document.getElementById('btnText');
             const btnSpinner = document.getElementById('btnSpinner');
 
-            // Reset errors
-            usernameInput.classList.remove('invalid');
-            passwordInput.classList.remove('invalid');
-            emailErr.style.display = 'none';
-            passErr.style.display = 'none';
+            // Reset UI
+            [nameInput, emailInput, passInput, confirmInput].forEach(i => i.classList.remove('invalid'));
+            [nameErr, emailErr, passErr, confirmErr].forEach(e => e.style.display = 'none');
 
             let valid = true;
-            const emailVal = usernameInput.value.trim();
-            const passVal = passwordInput.value;
+            const nameVal = nameInput.value.trim();
+            const emailVal = emailInput.value.trim();
+            const passVal = passInput.value;
+            const confirmVal = confirmInput.value;
 
-            if (!emailVal || !EMAIL_REGEX.test(emailVal)) {
-                usernameInput.classList.add('invalid');
-                emailErr.style.display = 'block';
-                valid = false;
-            }
-
-            if (!passVal) {
-                passwordInput.classList.add('invalid');
-                passErr.style.display = 'block';
-                valid = false;
-            }
+            if (!nameVal) { nameInput.classList.add('invalid'); nameErr.style.display = 'block'; valid = false; }
+            if (!emailVal || !EMAIL_REGEX.test(emailVal)) { emailInput.classList.add('invalid'); emailErr.style.display = 'block'; valid = false; }
+            if (passVal.length < 8 || !/[0-9!@#$%^&*(),.?":{}|<>]/.test(passVal)) { passInput.classList.add('invalid'); passErr.style.display = 'block'; valid = false; }
+            if (passVal !== confirmVal) { confirmInput.classList.add('invalid'); confirmErr.style.display = 'block'; valid = false; }
 
             if (!valid) return;
 
-            // Loading state
             submitBtn.disabled = true;
-            btnText.textContent = 'Authenticating...';
+            btnText.textContent = 'Creating Account...';
             btnSpinner.style.display = 'inline-block';
 
             try {
-                const response = await fetch('/auth/login', {
+                const response = await fetch('/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: emailVal, password: passVal })
+                    body: JSON.stringify({
+                        full_name: nameVal,
+                        username: emailVal,
+                        password: passVal,
+                        confirm_password: confirmVal
+                    })
                 });
 
                 const data = await response.json();
-
                 if (response.ok && data.status === 'success') {
                     window.location.href = data.redirect || '/';
                 } else {
-                    showBanner(data.error || 'Invalid credentials', 'error');
+                    showBanner(data.error || 'Registration failed');
                 }
             } catch (err) {
-                showBanner('Network error. Please try again.', 'error');
+                showBanner('Network error. Please try again.');
             } finally {
                 submitBtn.disabled = false;
-                btnText.textContent = 'Authenticate';
+                btnText.textContent = 'Create Account';
                 btnSpinner.style.display = 'none';
             }
         }
-    </script>
+            }
+        }
 
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    window.location.href = data.redirect || '/';
+                } else {
+                    showBanner(data.error || 'Google registration failed');
+                }
+            } catch (err) {
+                showBanner('Google sign-up failed.');
+            }
+        }
+    </script>
 </body>
 
 </html>

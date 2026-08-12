@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script type="module" src="{{ url_for('static', filename='firebase-init.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5.0">
 </head>
 <body>
@@ -47,10 +48,25 @@
                 <button class="mobile-toggle" id="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation menu">☰</button>
                 <h2>Real-Time Operations Dashboard</h2>
             </div>
-            <div class="system-status-pill">
-                <div class="dot green"></div> System Active
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div class="system-status-pill" id="live_session_pill" style="border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                    <div class="dot green"></div> <span id="session_operator_name">{{ current_user.name }}</span> &bull; <span id="active_sessions_badge">1 Session</span>
+                </div>
+                <div class="system-status-pill">
+                    <div class="dot green"></div> System Active
+                </div>
             </div>
         </header>
+
+        <!-- Real-Time Auth Notification Banner -->
+        <div id="live_auth_alert_bar" style="display: none; background: rgba(59, 130, 246, 0.15); border: 1px solid var(--accent-blue); color: var(--text-main); padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; font-weight: 500; align-items: center; justify-content: space-between; transition: all 0.3s ease;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🔑</span>
+                <span id="live_auth_alert_msg">Real-time authentication update received.</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-muted);" id="live_auth_alert_time">Just now</span>
+        </div>
+
 
         <!-- Overview Tab -->
         <div id="overview-tab" class="tab-content active-tab">
@@ -222,9 +238,35 @@
                 <p class="panel-desc">General system configuration options.</p>
                 <div class="input-group-full">
                     <label>Operator Email</label>
-                    <input type="text" value="sivachaitanya72@gmail.com" class="styled-input" readonly>
+                    <input type="text" value="{{ current_user.name }}" class="styled-input" readonly>
                 </div>
             </div>
+
+            <!-- Card: Real-Time Auth & Session Health -->
+            <div class="panel" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="panel-subtitle" style="margin-bottom: 0;">REAL-TIME AUTHENTICATION & SESSION HEALTH</div>
+                    <div class="system-status-pill" id="settings_auth_status_pill">
+                        <div class="dot green"></div> <span id="settings_session_state">Session Active</span>
+                    </div>
+                </div>
+                <p class="panel-desc">Real-time WebSocket monitoring of operator authentication state, active sessions, and live login/logout events.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">CURRENT OPERATOR</div>
+                        <div id="settings_auth_operator" style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-main); word-break: break-all;">{{ current_user.name }}</div>
+                    </div>
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">ACTIVE CONCURRENT SESSIONS</div>
+                        <div id="settings_auth_sessions_count" style="font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: #10b981;">1 Active</div>
+                    </div>
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">LAST AUTH ACTIVITY</div>
+                        <div id="settings_auth_last_activity" style="font-size: 0.85rem; font-weight: 600; margin-top: 4px; color: var(--text-muted);">Initialized</div>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Card A: Data Usage Settings -->
             <div class="panel" style="margin-top: 24px;">
