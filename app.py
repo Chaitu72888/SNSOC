@@ -3,10 +3,15 @@ if not eventlet.patcher.is_monkey_patched('socket'):
     eventlet.monkey_patch()
 
 import os
+import sys
 import json
 import time
 from dotenv import load_dotenv
 load_dotenv()
+
+# Add backend directory to Python sys.path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(BASE_DIR, 'backend'))
 
 from flask import Flask, render_template, redirect, url_for, request, jsonify
 from extensions import socketio
@@ -15,7 +20,11 @@ from config import Config
 from models import db, Operator, IDSRule, APIDataLog, PlatformSync, DataUsageSetting
 import bcrypt
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join('frontend', 'templates'),
+    static_folder=os.path.join('frontend', 'static')
+)
 app.config.from_object(Config)
 
 
@@ -108,11 +117,11 @@ def seed_db():
 
 # Register Blueprints
 from auth import auth_bp
-from api.dashboard import dashboard_bp
-from api.ids import ids_bp
-from api.intel import intel_bp
-from api.block import block_bp
-from api.telemetry import telemetry_bp
+from backend.api.dashboard import dashboard_bp
+from backend.api.ids import ids_bp
+from backend.api.intel import intel_bp
+from backend.api.block import block_bp
+from backend.api.telemetry import telemetry_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp, url_prefix='/api')
@@ -152,8 +161,8 @@ with app.app_context():
 
 
 # Start background tasks
-from engine.capture import start_capture_thread
-from engine.scorer import start_stats_thread
+from backend.engine.capture import start_capture_thread
+from backend.engine.scorer import start_stats_thread
 start_capture_thread(app, socketio)
 start_stats_thread(app, socketio)
 

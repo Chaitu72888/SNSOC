@@ -21,7 +21,9 @@ app/build/
 *.iml
 .DS_Store
 
+# Environment
+.env
+
 # Databases & local configs
 *.db
 *.sqlite3
-.env
