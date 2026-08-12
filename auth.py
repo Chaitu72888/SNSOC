@@ -262,7 +262,7 @@ def forgot_password():
     if operator:
         token = secrets.token_hex(32)
         operator.reset_token = token
-        operator.reset_token_expiry = time.time() + 3600 # 1 hour expiry
+        operator.reset_token_expiry = time.time() + 86400 # 24 hours expiry
         db.session.commit()
 
         reset_url = url_for('auth.reset_password', token=token, _external=True)
@@ -281,7 +281,7 @@ def reset_password(token):
     
     # Check token validity
     if not operator or not operator.reset_token_expiry or time.time() > operator.reset_token_expiry:
-        err = "Invalid or expired reset token. Please request a new passcode reset."
+        err = "Invalid or expired reset token. If you requested multiple resets, please click the link in your LATEST email."
         if request.method == 'POST' and request.is_json:
             return jsonify({"status": "error", "error": err}), 400
         return render_template('reset_password.html', error=err, invalid_token=True)
