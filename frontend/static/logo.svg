@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="100%" height="100%">
+    <defs>
+        <linearGradient id="fullShieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#469363"/>
+            <stop offset="100%" stop-color="#2a5d3f"/>
+        </linearGradient>
+    </defs>
+    <g transform="translate(50, 10)">
+        <!-- Green Shield -->
+        <path d="M 100 12 C 145 12 180 28 180 50 C 180 120 145 175 100 205 C 55 175 20 120 20 50 C 20 28 55 12 100 12 Z" fill="url(#fullShieldGrad)"/>
+        
+        <!-- Concentric Radar Arcs -->
+        <path d="M 62 90 A 42 42 0 0 1 138 90" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 74 98 A 28 28 0 0 1 126 98" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- Connecting Rays -->
+        <line x1="100" y1="114" x2="100" y2="52" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="100" y1="114" x2="60" y2="72" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="100" y1="114" x2="140" y2="72" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="100" y1="114" x2="68" y2="148" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="100" y1="114" x2="132" y2="148" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+
+        <!-- Node Circles -->
+        <circle cx="100" cy="52" r="7.5" fill="#ffffff"/>
+        <circle cx="60" cy="72" r="7.5" fill="#ffffff"/>
+        <circle cx="140" cy="72" r="7.5" fill="#ffffff"/>
+        <circle cx="68" cy="148" r="7.5" fill="#ffffff"/>
+        <circle cx="132" cy="148" r="7.5" fill="#ffffff"/>
+        
+        <!-- Center Node -->
+        <circle cx="100" cy="114" r="11" fill="#ffffff"/>
+    </g>
+
+    <!-- Branding Text -->
+    <text x="150" y="275" font-family="'Inter', sans-serif" font-weight="700" font-size="40" fill="#ffffff" text-anchor="middle" letter-spacing="4">SNSOC</text>
+    <text x="150" y="310" font-family="'Inter', sans-serif" font-weight="500" font-size="16" fill="#a3b8aa" text-anchor="middle" letter-spacing="2">real-time threat monitoring</text>
+</svg>

@@ -38,6 +38,13 @@ def get_dashboard():
     ip_counts = {}
     for p in stats.get('recent_packets', []):
         ip_counts[p['src_ip']] = ip_counts.get(p['src_ip'], 0) + 1
+        
+    if not ip_counts:
+        all_alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(50).all()
+        for a in all_alerts:
+            if a.src_ip:
+                ip_counts[a.src_ip] = ip_counts.get(a.src_ip, 0) + 1
+
     top_ips = [{"ip": k, "count": v} for k, v in sorted(ip_counts.items(), key=lambda x: x[1], reverse=True)[:5]]
 
     data = {
@@ -83,7 +90,12 @@ def get_alerts():
 def get_packets():
     limit = request.args.get('limit', 50, type=int)
     stats = get_packet_stats()
+    packets = stats.get('recent_packets', [])
+    if not packets:
+        db_pkts = PacketLog.query.order_by(PacketLog.timestamp.desc()).limit(limit).all()
+        packets = [p.to_dict() for p in db_pkts]
+
     return jsonify({
         "success": True,
-        "data": stats.get('recent_packets', [])[:limit]
+        "data": packets[:limit]
     })

@@ -147,3 +147,24 @@ class DataUsageSetting(db.Model):
             'alert_threshold_mb': self.alert_threshold_mb
         }
 
+
+class PacketLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.Float, nullable=False)
+    src_ip = db.Column(db.String(64), nullable=False)
+    dst_ip = db.Column(db.String(64), nullable=False)
+    dst_port = db.Column(db.Integer, nullable=True)
+    protocol = db.Column(db.String(16), nullable=False)
+    size = db.Column(db.Integer, nullable=False)
+
+    def to_dict(self):
+        return {
+            'timestamp': self.timestamp,
+            'src_ip': self.src_ip,
+            'dst_ip': self.dst_ip,
+            'dst_port': self.dst_port,
+            'protocol': self.protocol,
+            'size': self.size
+        }
+
+

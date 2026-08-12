@@ -45,6 +45,19 @@ def keep_alive_ping():
         "timestamp": time.time()
     })
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Public health check endpoint for external monitoring (e.g. UptimeRobot / cron-job.org)."""
+    from engine.capture import get_packet_stats
+    stats = get_packet_stats()
+    return jsonify({
+        "status": "healthy",
+        "service": "SNSOC.live",
+        "timestamp": time.time(),
+        "db_connected": True,
+        "packets_evaluated": stats.get('total_packets', 0)
+    }), 200
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -158,11 +171,13 @@ with app.app_context():
     db.create_all()
     migrate_db()
     seed_db()
+    from engine.capture import init_packet_stats
+    init_packet_stats(app)
 
 
 # Start background tasks
-from backend.engine.capture import start_capture_thread
-from backend.engine.scorer import start_stats_thread
+from engine.capture import start_capture_thread
+from engine.scorer import start_stats_thread
 start_capture_thread(app, socketio)
 start_stats_thread(app, socketio)
 

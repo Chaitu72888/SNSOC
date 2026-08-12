@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SNSOC - Real-Time Operations Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo-icon.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -17,9 +18,9 @@
 
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-icon"></div>
-            SNSOC<span class="highlight">.live</span>
+        <div class="sidebar-header" style="display: flex; align-items: center; gap: 10px;">
+            <img src="{{ url_for('static', filename='logo-icon.svg') }}" alt="SNSOC Logo" style="width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+            <span style="font-weight: 700; font-size: 1.25rem;">SNSOC<span class="highlight">.live</span></span>
         </div>
         <div class="nav-menu">
             <div class="nav-item active" onclick="switchTab('overview', this)">
@@ -140,6 +141,7 @@
                                 <th>Destination</th>
                                 <th>Proto</th>
                                 <th>Size</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="packet_body">
